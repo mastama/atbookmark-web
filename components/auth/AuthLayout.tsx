@@ -37,13 +37,13 @@ export function AuthLayout({
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2">
                         <span className="text-3xl">🔖</span>
-                        <span className="font-display text-2xl font-bold">atbookmark</span>
+                        <span className="font-display text-2xl font-bold">atBookmark</span>
                     </Link>
 
                     {/* Quote */}
                     <div className="max-w-sm">
                         <p className="text-2xl font-display font-bold leading-relaxed mb-4">
-                            "I went from 400 tabs to zero. My laptop fan finally stopped screaming."
+                            "I went from 500 tabs to zero. My laptop fan finally stopped screaming."
                         </p>
                         <p className="text-white/70 font-medium">— A Reformed Tab Hoarder</p>
                     </div>
@@ -76,7 +76,7 @@ export function AuthLayout({
                     {/* Mobile Logo */}
                     <div className="lg:hidden flex items-center gap-2 mb-8">
                         <span className="text-2xl">🔖</span>
-                        <span className="font-display text-xl font-bold">atbookmark</span>
+                        <span className="font-display text-xl font-bold">atBookmark</span>
                     </div>
 
                     {/* Header */}
