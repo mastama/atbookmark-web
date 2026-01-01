@@ -61,8 +61,15 @@ export function Header({ onMenuClick }: HeaderProps) {
                         <Menu className="h-5 w-5" />
                     </button>
                     <div className="hidden text-sm text-foreground/50 lg:block">
-                        <span className="font-medium text-foreground">Home</span>
+                        <span className="font-medium text-foreground">
+                            Home
+                        </span>
+                        <span className="mx-2">·</span>
+                        <span>
+                            Save less. Remember more.
+                        </span>
                     </div>
+
                 </div>
 
                 {/* Center: Search */}
