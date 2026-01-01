@@ -67,8 +67,8 @@ export function Features() {
                     <h2 className="font-display text-3xl font-bold md:text-4xl mb-4">
                         Not just bookmarks. <span className="text-primary">Superpowers.</span>
                     </h2>
-                    <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
-                        We took the humble bookmark and gave it a brain, a freezer, and a search engine.
+                    <p className="text-lg text-foreground/70 max-w-4xl mx-auto">
+                        We took the humble bookmark and gave it a brain, a freezer, and a search engine. So your knowledge never gets lost, forgotten, or wasted.
                     </p>
                 </motion.div>
 

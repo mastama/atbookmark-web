@@ -16,8 +16,10 @@ export function CTA() {
                     <h2 className="font-display text-3xl font-bold md:text-5xl mb-6 text-foreground">
                         Ready to clear your mind? 🧠
                     </h2>
-                    <p className="text-lg text-foreground/80 mb-10 max-w-xl mx-auto">
-                        Stop the tab anxiety. Start building your personal knowledge library today.
+                    <p className="text-lg text-foreground/80 mb-10 max-w-l mx-auto">
+                        Stop the tab anxiety.
+                        <br />
+                        Turn scattered links into a calm and searchable knowledge library you can trust.
                     </p>
 
                     <Button

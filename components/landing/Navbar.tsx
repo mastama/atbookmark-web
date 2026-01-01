@@ -22,7 +22,7 @@ export function Navbar() {
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-2">
                     <span className="text-2xl">🔖</span>
-                    <span className="font-display text-xl font-bold">atbookmark</span>
+                    <span className="font-display text-xl font-bold">atBookmark</span>
                 </Link>
 
                 {/* Desktop Nav */}

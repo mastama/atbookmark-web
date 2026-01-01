@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Instagram, Linkedin } from "lucide-react";
 
 export function Footer() {
     return (
@@ -9,7 +10,7 @@ export function Footer() {
                     <div className="text-center md:text-left">
                         <Link href="/" className="flex items-center justify-center gap-2 md:justify-start">
                             <span className="text-2xl">🔖</span>
-                            <span className="font-display text-xl font-bold">atbookmark</span>
+                            <span className="font-display text-xl font-bold">atBookmark</span>
                         </Link>
                         <p className="mt-2 text-sm text-foreground/60">
                             Part of the Annotasi ecosystem.
@@ -26,17 +27,30 @@ export function Footer() {
 
                     {/* Social */}
                     <div className="flex items-center gap-4">
-                        <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-foreground/60 hover:text-primary transition-colors">
-                            𝕏
+                        <a
+                            href="https://instagram.com/s_mastama"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Instagram"
+                            className="text-foreground/60 hover:text-primary transition-colors"
+                        >
+                            <Instagram className="h-5 w-5" />
                         </a>
-                        <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-foreground/60 hover:text-primary transition-colors">
-                            GitHub
+
+                        <a
+                            href="https://linkedin.com/in/singgih-pratama"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="LinkedIn"
+                            className="text-foreground/60 hover:text-primary transition-colors"
+                        >
+                            <Linkedin className="h-5 w-5" />
                         </a>
                     </div>
                 </div>
 
                 <div className="mt-8 pt-8 border-t border-border/50 text-center text-sm text-foreground/50">
-                    © {new Date().getFullYear()} atbookmark by Singgih Pratama. All rights reserved.
+                    © {new Date().getFullYear()} atBookmark by Singgih Pratama. All rights reserved.
                 </div>
             </div>
         </footer>
