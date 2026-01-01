@@ -334,7 +334,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <div className="flex h-16 items-center justify-between border-b-2 border-border px-4">
                     <Link href="/" className="flex items-center gap-2">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white font-bold">
-                            @
+                            🔖
                         </div>
                         <span className="font-display text-lg font-bold">atBookmark</span>
                     </Link>
