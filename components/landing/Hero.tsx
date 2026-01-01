@@ -1,11 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Sparkles, Play, TrendingDown, X } from "lucide-react";
+import { Sparkles, Play, TrendingDown, X, ArrowRight } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export function Hero() {
+    const { user } = useAuth();
+
     return (
         <section className="relative overflow-hidden bg-background px-4 py-16 md:py-24 lg:py-32">
             <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-2 lg:items-center">
@@ -17,8 +21,8 @@ export function Hero() {
                     className="space-y-8"
                 >
                     <h1 className="font-display text-4xl font-extrabold leading-tight md:text-5xl lg:text-6xl">
-                        Organize Tabs.{" "}
-                        <span className="text-primary">Build Knowledge.</span>
+                        Save Less.{" "}
+                        <span className="text-primary">Remember More.</span>
                     </h1>
 
                     <p className="max-w-lg text-lg text-foreground/70 md:text-xl">
@@ -26,10 +30,21 @@ export function Hero() {
                     </p>
 
                     <div className="flex flex-col gap-4 sm:flex-row">
-                        <Button size="lg">
-                            <Sparkles className="mr-2 h-5 w-5" />
-                            Save Your First Link
-                        </Button>
+                        {user ? (
+                            <Link href="/dashboard">
+                                <Button size="lg">
+                                    <ArrowRight className="mr-2 h-5 w-5" />
+                                    Go to Dashboard
+                                </Button>
+                            </Link>
+                        ) : (
+                            <Link href="/register">
+                                <Button size="lg">
+                                    <Sparkles className="mr-2 h-5 w-5" />
+                                    Save Your First Link
+                                </Button>
+                            </Link>
+                        )}
                         <Button size="lg" variant="outline">
                             <Play className="mr-2 h-5 w-5" />
                             View the Demo
