@@ -1,29 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation"; // Added useRouter
 import { cn } from "@/lib/utils";
 import {
     Home,
     Inbox,
-    Heart,
     Library,
     Sparkles,
     Brain,
     TrendingDown,
     Folder,
     Tag,
-    Trash2,
     Settings,
     X,
     Plus,
     ChevronRight,
     GripVertical,
+    LucideArchive,
+    Lock, // Added Lock icon
 } from "lucide-react";
 import { useState, DragEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { useOrganization, Folder as FolderType, FolderColor } from "@/hooks/useOrganization";
+import { useOrganization, Folder as FolderType } from "@/hooks/useOrganization";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { CreateFolderModal } from "@/components/modals/CreateFolderModal";
 import { CreateTagModal } from "@/components/modals/CreateTagModal";
@@ -34,21 +34,22 @@ interface SidebarProps {
     onClose: () => void;
 }
 
+// UPDATE 1: Menambahkan flag isPro dan isDev pada konfigurasi menu
 const navGroups = [
     {
         label: "My Brain",
         items: [
-            { label: "Home", href: "/dashboard", icon: Home },
-            { label: "Favorites", href: "/dashboard/favorites", icon: Heart },
-            { label: "All Library", href: "/dashboard/library", icon: Library },
+            { label: "Home", href: "/dashboard", icon: Home, isPro: false, isDev: false },
+            { label: "All Library", href: "/dashboard/library", icon: Library, isPro: false, isDev: false },
         ],
     },
     {
         label: "Smart Views",
         items: [
-            { label: "AI Curated", href: "/dashboard/ai-curated", icon: Sparkles },
-            { label: "Knowledge Graph", href: "/dashboard/knowledge", icon: Brain },
-            { label: "RAM Saver", href: "/dashboard/ram-saver", icon: TrendingDown },
+            { label: "Archives", href: "/dashboard/archives", icon: LucideArchive, isPro: true, isDev: false }, // Anggap Archives sudah jadi tapi Pro
+            { label: "AI Curated", href: "/dashboard/ai-curated", icon: Sparkles, isPro: true, isDev: true }, // Masih development
+            { label: "Knowledge Graph", href: "/dashboard/knowledge", icon: Brain, isPro: true, isDev: true }, // Masih development
+            { label: "RAM Saver", href: "/dashboard/ram-saver", icon: TrendingDown, isPro: true, isDev: true }, // Masih development
         ],
     },
 ];
@@ -122,7 +123,7 @@ function FolderItem({
 
     const handleDrop = (e: DragEvent) => {
         e.preventDefault();
-        e.stopPropagation(); // Prevent dropping on multiple levels at once
+        e.stopPropagation();
         setIsDragOver(false);
         onDrop(e, folder);
     };
@@ -201,6 +202,7 @@ function FolderItem({
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const pathname = usePathname();
+    const router = useRouter(); // Gunakan router untuk navigasi manual jika perlu
     const {
         folders,
         tags,
@@ -224,13 +226,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const inboxCount = getBookmarkCount("inbox");
     const customFolders = folders.filter((f) => f.type === "custom");
 
-    // Get pinned root folders with free limit (excluding inbox which is shown separately)
     const pinnedRootFolders = getPinnedRootFolders().filter((f) => f.id !== "inbox");
     const visibleFolders = isPro
         ? pinnedRootFolders
         : pinnedRootFolders.slice(0, FREE_FOLDER_LIMIT);
 
-    // Get pinned tags (Pro only shows them, Free shows link)
     const pinnedTags = getPinnedTags();
 
     const handleAddFolder = () => {
@@ -262,9 +262,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
     const handleDrop = (e: DragEvent, targetFolder: FolderType) => {
         e.preventDefault();
-        e.stopPropagation(); // Prevent dropping on multiple levels at once
+        e.stopPropagation();
         if (!draggedFolder || draggedFolder.id === targetFolder.id) return;
-        // Prevent dropping parent into its own child
+
         const isChild = (parentId: string | null, checkId: string): boolean => {
             if (!parentId) return false;
             if (parentId === checkId) return true;
@@ -288,9 +288,31 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         setDraggedFolder(null);
     };
 
+    // UPDATE 2: Helper function untuk menangani klik menu
+    const handleMenuClick = (e: React.MouseEvent, item: typeof navGroups[0]['items'][0]) => {
+        // 1. Cek apakah fitur Pro dan user masih Free
+        if (item.isPro && !isPro) {
+            e.preventDefault(); // Jangan pindah halaman
+            setProModalOpen(true);
+            return;
+        }
+
+        // 2. Cek apakah fitur masih dalam pengembangan (isDev)
+        if (item.isDev) {
+            e.preventDefault(); // Jangan pindah halaman (cegah 404)
+            toast.info("This feature is currently under development! 🚀");
+            return;
+        }
+
+        // Default: Biarkan Link bekerja normal
+        // Close sidebar on mobile if needed
+        if (window.innerWidth < 1024) {
+            onClose();
+        }
+    };
+
     return (
         <>
-            {/* Mobile Overlay */}
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
@@ -303,14 +325,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 )}
             </AnimatePresence>
 
-            {/* Sidebar */}
             <aside
                 className={cn(
                     "fixed left-0 top-0 z-50 flex h-full w-64 flex-col border-r-2 border-border bg-surface transition-transform lg:static lg:translate-x-0",
                     isOpen ? "translate-x-0" : "-translate-x-full"
                 )}
             >
-                {/* Logo */}
                 <div className="flex h-16 items-center justify-between border-b-2 border-border px-4">
                     <Link href="/" className="flex items-center gap-2">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white font-bold">
@@ -323,7 +343,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     </button>
                 </div>
 
-                {/* Navigation */}
                 <nav className="flex-1 overflow-y-auto p-4">
                     {/* Inbox */}
                     {inboxFolder && (
@@ -348,7 +367,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         </div>
                     )}
 
-                    {/* Nav Groups */}
+                    {/* Nav Groups (Updated with Logic) */}
                     {navGroups.map((group) => (
                         <div key={group.label} className="mb-6">
                             <h3 className="mb-2 px-3 text-xs font-bold uppercase tracking-wider text-gray-400">
@@ -358,19 +377,28 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                 {group.items.map((item) => {
                                     const Icon = item.icon;
                                     const isActive = pathname === item.href;
+                                    const isLocked = item.isPro && !isPro;
+
                                     return (
-                                        <li key={item.href}>
+                                        <li key={item.label}>
                                             <Link
                                                 href={item.href}
+                                                onClick={(e) => handleMenuClick(e, item)}
                                                 className={cn(
-                                                    "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all",
+                                                    "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all group",
                                                     isActive
                                                         ? "bg-primary/10 font-medium text-primary"
-                                                        : "text-gray-600 hover:bg-gray-100"
+                                                        : "text-gray-600 hover:bg-gray-100",
+                                                    isLocked && "opacity-75 hover:opacity-100"
                                                 )}
                                             >
                                                 <Icon className="h-4 w-4" />
-                                                {item.label}
+                                                <span className="flex-1">{item.label}</span>
+
+                                                {/* Show Lock icon if Pro and User is Free */}
+                                                {isLocked && (
+                                                    <Lock className="h-3 w-3 text-gray-400 group-hover:text-amber-500 transition-colors" />
+                                                )}
                                             </Link>
                                         </li>
                                     );
@@ -379,7 +407,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         </div>
                     ))}
 
-                    {/* Folders Section */}
                     <div
                         className="mb-4"
                         onDragOver={handleDragOver}
@@ -434,7 +461,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         )}
                     </div>
 
-                    {/* Tags Section */}
                     <div className="mb-4">
                         <div className="flex items-center justify-between px-3 py-2">
                             <Link
@@ -517,15 +543,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     )}
 
                     <ul className="space-y-1">
-                        <li>
-                            <Link
-                                href="/dashboard/trash"
-                                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-                            >
-                                <Trash2 className="h-5 w-5" />
-                                Trash
-                            </Link>
-                        </li>
+                        {/* UPDATE 3: Menu Trash dihapus sesuai permintaan */}
                         <li>
                             <Link
                                 href="/dashboard/settings"
@@ -550,7 +568,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </div>
             </aside>
 
-            {/* Modals */}
             <CreateFolderModal isOpen={createFolderOpen} onClose={() => setCreateFolderOpen(false)} />
             <CreateTagModal isOpen={createTagOpen} onClose={() => setCreateTagOpen(false)} />
             <ProModal isOpen={proModalOpen} onClose={() => setProModalOpen(false)} />
