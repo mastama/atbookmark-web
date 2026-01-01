@@ -9,10 +9,15 @@ import {
     Trash2,
     Heart,
     Check,
-    Eye
+    Eye,
+    CheckCircle,
+    Archive,
+    FolderInput,
+    Folder as FolderIcon,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Bookmark, useBookmarks } from "@/hooks/useBookmarks";
+import { useOrganization } from "@/hooks/useOrganization";
 import { EditBookmarkModal } from "@/components/modals/EditBookmarkModal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -22,6 +27,9 @@ import {
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
+    DropdownMenuSub,
+    DropdownMenuSubTrigger,
+    DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 
 interface BookmarkCardProps {
@@ -37,187 +45,285 @@ export function BookmarkCard({
     index,
     isSelected = false,
     onSelect,
-    selectionMode = false
+    selectionMode = false,
 }: BookmarkCardProps) {
-    const { toggleFavorite, removeBookmark } = useBookmarks();
+    const {
+        toggleFavorite,
+        removeBookmark,
+        moveBookmarks,
+        updateBookmark,
+    } = useBookmarks();
+
+    const { folders } = useOrganization();
+
     const [editOpen, setEditOpen] = useState(false);
     const [imageError, setImageError] = useState(false);
 
-    // Format Relative Time
-    const timeAgo = formatDistanceToNow(bookmark.createdAt, { addSuffix: true })
+    const currentFolderName =
+        folders.find((f) => f.id === bookmark.folderId)?.name || "Inbox";
+
+    // Safely handle createdAt (fallback to current time if undefined)
+    const createdTimestamp = bookmark.createdAt || Date.now();
+    const timeAgo = formatDistanceToNow(createdTimestamp, {
+        addSuffix: true,
+    })
         .replace("about ", "")
         .replace("less than a minute", "Just now");
 
-    // Favicon Generator (Google API)
     const faviconUrl = `https://www.google.com/s2/favicons?domain=${bookmark.domain}&sz=32`;
 
-    const handleCardClick = () => {
-        if (selectionMode && onSelect) {
-            onSelect(bookmark.id);
-            return;
-        }
-        window.open(bookmark.url, "_blank");
+    /* ----------------------------------
+     * Actions
+     * ---------------------------------- */
+    const handleOpenLink = () => window.open(bookmark.url, "_blank");
+
+    const handleMoveToFolder = (folderId: string, folderName: string) => {
+        moveBookmarks([bookmark.id], folderId);
+        toast.success(`Moved to ${folderName}`);
     };
 
-    const handleCheckboxClick = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        onSelect?.(bookmark.id);
+    const handleArchive = () => {
+        updateBookmark(bookmark.id, { archived: true });
+        toast.success("Archived");
     };
 
-    const handleFavorite = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        toggleFavorite(bookmark.id);
-        toast.success(bookmark.isFavorite ? "Removed from favorites" : "Added to favorites ❤️");
+    const handleMarkAsRead = () => {
+        updateBookmark(bookmark.id, { isRead: true });
+        toast.success("Marked as read");
     };
 
-    const handleDelete = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        removeBookmark(bookmark.id);
-        toast.success("Bookmark deleted 🗑️");
+    const handleMarkAsUnread = () => {
+        updateBookmark(bookmark.id, { isRead: false });
+        toast("Marked as unread");
     };
 
     return (
         <>
             <motion.div
+                layout
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="group relative flex flex-col overflow-hidden rounded-2xl border-2 border-border bg-surface transition-all hover:shadow-brutal-md hover:-translate-y-1"
+                className={cn(
+                    "group relative flex flex-col overflow-hidden rounded-2xl border-2 bg-white transition-all hover:shadow-brutal-sm",
+                    isSelected
+                        ? "border-primary ring-1 ring-primary"
+                        : "border-border",
+                    bookmark.isRead && "opacity-75"
+                )}
             >
-                {/* --- 1. COVER IMAGE SECTION --- */}
+                {/* ================= COVER IMAGE ================= */}
                 <div
-                    className="relative aspect-[1.6/1] w-full overflow-hidden bg-accent-mint/20 cursor-pointer"
-                    onClick={handleCardClick}
+                    className="relative aspect-[1.6/1] w-full overflow-hidden bg-gray-50 cursor-pointer"
+                    onClick={() =>
+                        selectionMode && onSelect
+                            ? onSelect(bookmark.id)
+                            : handleOpenLink()
+                    }
                 >
-                    {/* Selection Checkbox - Clean minimal style */}
+                    {/* Selection */}
                     {onSelect && (
                         <div
-                            onClick={handleCheckboxClick}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onSelect(bookmark.id);
+                            }}
                             className={cn(
-                                "absolute left-3 top-3 z-10 flex h-6 w-6 cursor-pointer items-center justify-center rounded-lg border-2 transition-all",
+                                "absolute left-3 top-3 z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 shadow-sm transition-all",
                                 isSelected
-                                    ? "border-primary bg-primary text-white shadow-brutal-sm"
-                                    : "border-white bg-white/90 opacity-0 group-hover:opacity-100",
+                                    ? "border-primary bg-primary text-white"
+                                    : "border-white bg-white/50 opacity-0 group-hover:opacity-100",
                                 selectionMode && "opacity-100"
                             )}
                         >
-                            {isSelected && <Check className="h-4 w-4" />}
+                            {isSelected && <Check className="h-3.5 w-3.5" />}
                         </div>
                     )}
 
-                    {/* Image */}
+                    {/* Folder Badge (ALWAYS VISIBLE) */}
+                    <div className="absolute right-3 top-3 z-10">
+                        <span className="flex items-center gap-1.5 rounded-full bg-black/70 backdrop-blur-md px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm">
+                            <FolderIcon className="h-3 w-3 opacity-80" />
+                            <span className="truncate max-w-[80px]">{currentFolderName}</span>
+                        </span>
+                    </div>
+
+                    {/* Read Indicator */}
+                    {bookmark.isRead && (
+                        <div className="absolute left-3 bottom-3 flex items-center gap-1 rounded-full bg-green-500/90 px-2 py-0.5 text-[9px] font-bold text-white shadow">
+                            <CheckCircle className="h-3 w-3" />
+                            <span>READ</span>
+                        </div>
+                    )}
+
                     <img
-                        src={imageError ? `https://ui-avatars.com/api/?name=${bookmark.domain}&background=C4B5FD&color=6366F1` : bookmark.coverImage}
+                        src={
+                            imageError
+                                ? `https://ui-avatars.com/api/?name=${bookmark.domain}&background=random&color=fff`
+                                : bookmark.coverImage
+                        }
                         alt={bookmark.title}
                         onError={() => setImageError(true)}
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                 </div>
 
-                {/* --- 2. CONTENT SECTION --- */}
-                <div className="flex flex-1 flex-col p-4 cursor-pointer" onClick={handleCardClick}>
-
-                    {/* Meta: Favicon & Domain */}
-                    <div className="mb-2 flex items-center gap-2">
+                {/* ================= CONTENT ================= */}
+                <div className="flex flex-1 flex-col p-4">
+                    {/* Meta */}
+                    <div className="mb-2 flex items-center gap-2 text-xs text-gray-500">
                         <img
                             src={faviconUrl}
-                            alt=""
                             className="h-4 w-4 rounded-sm"
-                            onError={(e) => e.currentTarget.style.display = 'none'}
+                            onError={(e) => (e.currentTarget.style.display = "none")}
                         />
-                        <span className="text-xs font-medium text-foreground/50 truncate max-w-[150px]">
+                        <span className="truncate font-medium opacity-80">
                             {bookmark.domain}
                         </span>
-                        <span className="text-[10px] text-foreground/30">•</span>
-                        <span className="text-[10px] text-foreground/50">{bookmark.readingTime}</span>
                     </div>
 
                     {/* Title */}
-                    <h3 className="mb-1 font-display text-base font-bold leading-tight text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                    <h3
+                        onClick={handleOpenLink}
+                        className={cn(
+                            "mb-1 font-display text-base font-bold leading-tight line-clamp-2 cursor-pointer transition-colors",
+                            bookmark.isRead
+                                ? "text-gray-500"
+                                : "text-gray-900 hover:text-primary"
+                        )}
+                    >
                         {bookmark.title}
                     </h3>
 
                     {/* Tags */}
                     <div className="mb-4 flex-1">
-                        {bookmark.tags && bookmark.tags.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                                {bookmark.tags.slice(0, 3).map((tag) => (
-                                    <span
-                                        key={tag.id || tag.label}
-                                        className={cn(
-                                            "text-[11px] px-2 py-0.5 rounded-full font-semibold border border-border/50",
-                                            tag.color || "bg-accent-mint"
-                                        )}
-                                    >
-                                        {tag.label}
-                                    </span>
-                                ))}
-                                {bookmark.tags.length > 3 && (
-                                    <span className="text-[11px] px-2 py-0.5 text-foreground/40 font-medium">
-                                        +{bookmark.tags.length - 3}
-                                    </span>
-                                )}
-                            </div>
-                        ) : (
-                            <p className="text-xs text-foreground/40 italic mt-1">No tags</p>
-                        )}
+                        <div className="flex flex-wrap gap-1 mt-2">
+                            {bookmark.tags?.slice(0, 3).map((tag) => (
+                                <span
+                                    key={tag.id || tag.label}
+                                    className="rounded-full border px-2 py-0.5 text-[10px] font-bold text-gray-600 bg-gray-100"
+                                >
+                                    {tag.label}
+                                </span>
+                            ))}
+                        </div>
                     </div>
 
-                    {/* --- 3. FOOTER ACTIONS --- */}
-                    <div className="mt-auto flex items-center justify-between border-t border-dashed border-border/30 pt-3">
-                        <span className="text-[11px] font-medium text-foreground/40">
+                    {/* ================= FOOTER ================= */}
+                    <div className="mt-auto flex items-center justify-between border-t border-dashed border-gray-100 pt-3">
+                        <span className="text-[11px] font-medium text-gray-400">
                             {timeAgo}
                         </span>
 
-                        <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                            {/* External Link */}
+                        <div className="flex items-center gap-1">
+                            {/* Open Link (DO NOT REMOVE) */}
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    window.open(bookmark.url, "_blank");
+                                    handleOpenLink();
                                 }}
-                                className="rounded-lg p-1.5 text-foreground/50 hover:bg-accent-sky/30 hover:text-primary transition-colors"
-                                title="Open Link"
+                                className="p-1.5 rounded-md text-gray-400 hover:text-primary hover:bg-gray-100 transition-colors"
                             >
                                 <ExternalLink className="h-4 w-4" />
                             </button>
 
-                            {/* Edit Button */}
+                            {/* Favorite */}
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    setEditOpen(true);
+                                    toggleFavorite(bookmark.id);
                                 }}
-                                className="rounded-lg p-1.5 text-foreground/50 hover:bg-accent-lavender/30 hover:text-primary transition-colors"
-                                title="Edit"
+                                className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                             >
-                                <Edit2 className="h-4 w-4" />
+                                <Heart
+                                    className={cn(
+                                        "h-4 w-4",
+                                        bookmark.isFavorite && "fill-red-500 text-red-500"
+                                    )}
+                                />
                             </button>
 
-                            {/* Dropdown Menu */}
+                            {/* Dropdown */}
                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                    <button className="rounded-lg p-1.5 text-foreground/50 hover:bg-secondary/50 hover:text-primary outline-none focus:ring-0">
+                                <DropdownMenuTrigger asChild>
+                                    <button className="p-1.5 rounded-md text-gray-400 hover:bg-gray-100">
                                         <MoreHorizontal className="h-4 w-4" />
                                     </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-48">
-                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(bookmark.url, '_blank'); }}>
+
+                                <DropdownMenuContent align="end" className="w-56 p-1">
+                                    <DropdownMenuItem onClick={handleOpenLink}>
                                         <Eye className="mr-2 h-4 w-4" />
-                                        View Site
+                                        Lihat Detail
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={handleFavorite}>
-                                        <Heart className={cn("mr-2 h-4 w-4", bookmark.isFavorite ? "fill-accent-coral text-accent-coral" : "")} />
-                                        {bookmark.isFavorite ? "Unfavorite" : "Add to Favorites"}
+
+                                    <DropdownMenuItem
+                                        onClick={() => toggleFavorite(bookmark.id)}
+                                    >
+                                        <Heart className="mr-2 h-4 w-4" />
+                                        {bookmark.isFavorite
+                                            ? "Hapus dari Favorit"
+                                            : "Tambah ke Favorit"}
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setEditOpen(true); }}>
-                                        <Edit2 className="mr-2 h-4 w-4" />
-                                        Edit Details
+
+                                    <DropdownMenuItem
+                                        onClick={
+                                            bookmark.isRead
+                                                ? handleMarkAsUnread
+                                                : handleMarkAsRead
+                                        }
+                                    >
+                                        <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                                        {bookmark.isRead
+                                            ? "Tandai Belum Dibaca"
+                                            : "Tandai Sudah Dibaca"}
                                     </DropdownMenuItem>
+
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={handleDelete} className="text-accent-coral focus:text-accent-coral focus:bg-accent-coral/10">
+
+                                    <DropdownMenuSub>
+                                        <DropdownMenuSubTrigger>
+                                            <FolderInput className="mr-2 h-4 w-4" />
+                                            Pindah ke Folder
+                                        </DropdownMenuSubTrigger>
+                                        <DropdownMenuSubContent className="max-h-60 overflow-y-auto">
+                                            {folders.map((f) => (
+                                                <DropdownMenuItem
+                                                    key={f.id}
+                                                    onClick={() =>
+                                                        handleMoveToFolder(f.id, f.name)
+                                                    }
+                                                >
+                                                    <FolderIcon className="mr-2 h-4 w-4" />
+                                                    {f.name}
+                                                    {bookmark.folderId === f.id && (
+                                                        <Check className="ml-auto h-3 w-3 text-primary" />
+                                                    )}
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuSubContent>
+                                    </DropdownMenuSub>
+
+                                    <DropdownMenuItem
+                                        onClick={() => setEditOpen(true)}
+                                    >
+                                        <Edit2 className="mr-2 h-4 w-4" />
+                                        Edit
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuItem onClick={handleArchive}>
+                                        <Archive className="mr-2 h-4 w-4" />
+                                        Arsipkan
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuSeparator />
+
+                                    <DropdownMenuItem
+                                        onClick={() => removeBookmark(bookmark.id)}
+                                        className="text-red-600 focus:bg-red-50"
+                                    >
                                         <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete
+                                        Hapus
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -226,7 +332,6 @@ export function BookmarkCard({
                 </div>
             </motion.div>
 
-            {/* Edit Modal */}
             <EditBookmarkModal
                 isOpen={editOpen}
                 onClose={() => setEditOpen(false)}
