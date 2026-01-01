@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -14,8 +14,12 @@ import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+    // Get returnUrl from query params, default to /dashboard
+    const returnUrl = searchParams.get("returnUrl") || "/dashboard";
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,7 +34,7 @@ export default function LoginPage() {
         toast.success("Welcome back! Redirecting... 🌊");
 
         setTimeout(() => {
-            router.push("/dashboard");
+            router.push(returnUrl);
         }, 500);
     };
 
@@ -45,7 +49,7 @@ export default function LoginPage() {
         toast.success("Connected with Google! Redirecting... 🌊");
 
         setTimeout(() => {
-            router.push("/dashboard");
+            router.push(returnUrl);
         }, 500);
     };
 

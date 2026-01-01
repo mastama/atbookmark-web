@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sparkles, Play, TrendingDown, X, ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { InstallExtensionButton } from "@/components/landing/InstallExtensionButton";
 
 export function Hero() {
     const { user } = useAuth();
@@ -29,7 +30,7 @@ export function Hero() {
                         The AI-powered bookmark manager that frees your RAM, summarizes your reading, and organizes your chaos automatically.
                     </p>
 
-                    <div className="flex flex-col gap-4 sm:flex-row">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
                         {user ? (
                             <Link href="/dashboard">
                                 <Button size="lg">
@@ -45,6 +46,7 @@ export function Hero() {
                                 </Button>
                             </Link>
                         )}
+                        <InstallExtensionButton />
                         <Button size="lg" variant="outline">
                             <Play className="mr-2 h-5 w-5" />
                             View the Demo
