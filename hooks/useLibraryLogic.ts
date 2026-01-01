@@ -127,7 +127,8 @@ export function useLibraryLogic(): UseLibraryLogicReturn {
 
     // Memoized filtered bookmarks
     const filteredBookmarks = useMemo(() => {
-        let result = bookmarks.filter((b) => !b.isTrashed);
+        // CRITICAL: Exclude both trashed AND archived items from library
+        let result = bookmarks.filter((b) => !b.isTrashed && !b.archived);
 
         // 1. Search filter
         if (filters.searchQuery) {
@@ -224,7 +225,7 @@ export function useLibraryLogic(): UseLibraryLogicReturn {
 
     // Unique domains for filter dropdown
     const uniqueDomains = useMemo(() => {
-        const domains = new Set(bookmarks.filter((b) => !b.isTrashed).map((b) => b.domain));
+        const domains = new Set(bookmarks.filter((b) => !b.isTrashed && !b.archived).map((b) => b.domain));
         return Array.from(domains).sort();
     }, [bookmarks]);
 
@@ -232,7 +233,7 @@ export function useLibraryLogic(): UseLibraryLogicReturn {
     const uniqueTags = useMemo(() => {
         const tagMap = new Map<string, { id: string; name: string }>();
         bookmarks
-            .filter((b) => !b.isTrashed)
+            .filter((b) => !b.isTrashed && !b.archived)
             .forEach((b) => {
                 b.tags.forEach((t) => {
                     if (!tagMap.has(t.label)) {

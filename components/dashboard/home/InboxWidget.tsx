@@ -28,12 +28,12 @@ export function InboxWidget() {
 
     // Get inbox items
     const inboxItems = bookmarks
-        .filter((b) => b.folderId === "inbox" && !b.isTrashed)
+        .filter((b) => b.folderId === "inbox" && !b.isTrashed && !b.archived)
         .slice(0, MAX_ITEMS);
 
     const isInboxZero = inboxItems.length === 0;
     const totalInbox = bookmarks.filter(
-        (b) => b.folderId === "inbox" && !b.isTrashed
+        (b) => b.folderId === "inbox" && !b.isTrashed && !b.archived
     ).length;
 
     const handleAIOrganize = () => {

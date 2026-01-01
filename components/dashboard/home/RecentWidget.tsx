@@ -16,9 +16,9 @@ export function RecentWidget({ viewMode = "grid" }: RecentWidgetProps) {
     const { bookmarks } = useBookmarks();
     const router = useRouter();
 
-    // Get recent items sorted by createdAt
+    // Get recent items sorted by createdAt (EXCLUDE archived and trashed)
     const recentItems = [...bookmarks]
-        .filter((b) => !b.isTrashed)
+        .filter((b) => !b.isTrashed && !b.archived)
         .sort((a, b) => b.createdAt - a.createdAt)
         .slice(0, MAX_ITEMS);
 
