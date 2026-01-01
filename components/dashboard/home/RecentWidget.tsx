@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Clock, ArrowRight } from "lucide-react";
 import { useBookmarks, Bookmark } from "@/hooks/useBookmarks";
 import { BookmarkCard } from "@/components/dashboard/BookmarkCard";
+import { useRouter } from "next/navigation";
 
 const MAX_ITEMS = 8;
 
@@ -13,6 +14,7 @@ interface RecentWidgetProps {
 
 export function RecentWidget({ viewMode = "grid" }: RecentWidgetProps) {
     const { bookmarks } = useBookmarks();
+    const router = useRouter();
 
     // Get recent items sorted by createdAt
     const recentItems = [...bookmarks]
@@ -46,9 +48,14 @@ export function RecentWidget({ viewMode = "grid" }: RecentWidgetProps) {
                     </div>
                 </div>
 
-                <button className="flex items-center gap-1 text-sm font-medium text-foreground/60 hover:text-primary transition-colors">
-                    View All <ArrowRight className="h-4 w-4" />
+                <button
+                    onClick={() => router.push("/dashboard/library")}
+                    className="flex items-center gap-1 text-sm font-medium text-foreground/60 hover:text-primary transition-colors"
+                >
+                    View all
+                    <ArrowRight className="h-4 w-4" />
                 </button>
+
             </div>
 
             {/* Grid/List View */}
