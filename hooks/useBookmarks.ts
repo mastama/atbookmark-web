@@ -23,6 +23,8 @@ export interface Bookmark {
     readingTime: string;
     isFavorite: boolean;
     isTrashed: boolean;
+    isRead: boolean;
+    archived: boolean;
     createdAt: number;
 }
 
@@ -41,6 +43,8 @@ interface BookmarksState {
         url?: string;
         folderId?: string;
         tags?: string[];
+        isRead?: boolean;
+        archived?: boolean;
     }) => void;
     removeBookmark: (id: string) => void;
     toggleFavorite: (id: string) => void;
@@ -102,9 +106,10 @@ const initialBookmarks: Bookmark[] = [
         readingTime: "5 min read",
         isFavorite: true,
         isTrashed: false,
+        isRead: false,
+        archived: false,
         createdAt: Date.now() - 7200000,
     },
-    // ... item lainnya (pastikan format tag konsisten jika ada)
 ];
 
 // --- Store ---
@@ -141,6 +146,8 @@ export const useBookmarks = create<BookmarksState>()(
                     readingTime: `${Math.floor(Math.random() * 10) + 2} min read`,
                     isFavorite: false,
                     isTrashed: false,
+                    isRead: false,
+                    archived: false,
                     createdAt: now,
                 };
 
@@ -214,6 +221,10 @@ export const useBookmarks = create<BookmarksState>()(
                                 }
                             });
                         }
+
+                        // Handle isRead and archived updates
+                        if (data.isRead !== undefined) updatedBookmark.isRead = data.isRead;
+                        if (data.archived !== undefined) updatedBookmark.archived = data.archived;
 
                         return updatedBookmark;
                     }),
