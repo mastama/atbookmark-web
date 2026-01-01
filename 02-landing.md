@@ -89,7 +89,7 @@ Your task is to design and implement the **LANDING PAGE ONLY** for the *atbookma
 * **Background:** Gen-Z Yellow `#FACC15` (High energy).
 * **Headline:** "Ready to clear your mind?"
 * **Button:** "Install Chrome Extension" (Large, Black button, White text).
-* **Micro-copy:** "Free forever for up to 500 bookmarks."
+* **Micro-copy:** "Free forever for up to 100 bookmarks."
 
 ---
 
