@@ -14,6 +14,8 @@ import {
     Archive,
     FolderInput,
     Folder as FolderIcon,
+    XCircle,
+    Copy
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Bookmark, useBookmarks } from "@/hooks/useBookmarks";
@@ -59,27 +61,32 @@ export function BookmarkCard({
     const [editOpen, setEditOpen] = useState(false);
     const [imageError, setImageError] = useState(false);
 
-    const currentFolderName =
-        folders.find((f) => f.id === bookmark.folderId)?.name || "Inbox";
-
-    // Safely handle createdAt (fallback to current time if undefined)
-    const createdTimestamp = bookmark.createdAt || Date.now();
-    const timeAgo = formatDistanceToNow(createdTimestamp, {
-        addSuffix: true,
-    })
-        .replace("about ", "")
-        .replace("less than a minute", "Just now");
+    const currentFolder = folders.find((f) => f.id === bookmark.folderId);
+    const currentFolderName = currentFolder ? currentFolder.name : "Inbox";
+    let timeAgo = "Just now";
+    try {
+        timeAgo = formatDistanceToNow(bookmark.createdAt || Date.now(), {
+            addSuffix: true,
+        })
+            .replace("about ", "")
+            .replace("less than a minute", "Just now");
+    } catch (e) { }
 
     const faviconUrl = `https://www.google.com/s2/favicons?domain=${bookmark.domain}&sz=32`;
+
+    // Helper: Truncate URL agar rapi
+    const displayUrl = bookmark.url
+        .replace(/^https?:\/\/(www\.)?/, "")
+        .substring(0, 30) + (bookmark.url.length > 30 ? "..." : "");
 
     /* ----------------------------------
      * Actions
      * ---------------------------------- */
     const handleOpenLink = () => window.open(bookmark.url, "_blank");
 
-    const handleMoveToFolder = (folderId: string, folderName: string) => {
-        moveBookmarks([bookmark.id], folderId);
-        toast.success(`Moved to ${folderName}`);
+    const handleMoveToFolder = (targetFolderId: string, targetFolderName: string) => {
+        moveBookmarks([bookmark.id], targetFolderId);
+        toast.success(`Moved to ${targetFolderName}`);
     };
 
     const handleArchive = () => {
@@ -88,14 +95,24 @@ export function BookmarkCard({
     };
 
     const handleMarkAsRead = () => {
+        // @ts-ignore
         updateBookmark(bookmark.id, { isRead: true });
         toast.success("Marked as read");
     };
 
     const handleMarkAsUnread = () => {
+        // @ts-ignore
         updateBookmark(bookmark.id, { isRead: false });
         toast("Marked as unread");
     };
+
+    const copyLink = () => {
+        navigator.clipboard.writeText(bookmark.url);
+        toast.success("Link copied to clipboard");
+    }
+    // @ts-ignore
+    const isRead = bookmark.isRead === true;
+
 
     return (
         <>
@@ -109,7 +126,7 @@ export function BookmarkCard({
                     isSelected
                         ? "border-primary ring-1 ring-primary"
                         : "border-border",
-                    bookmark.isRead && "opacity-75"
+                    bookmark.isRead && "opacity-75 bg-gray-50"
                 )}
             >
                 {/* ================= COVER IMAGE ================= */}
@@ -121,7 +138,7 @@ export function BookmarkCard({
                             : handleOpenLink()
                     }
                 >
-                    {/* Selection */}
+                    {/* Checkbox Selection */}
                     {onSelect && (
                         <div
                             onClick={(e) => {
@@ -129,11 +146,19 @@ export function BookmarkCard({
                                 onSelect(bookmark.id);
                             }}
                             className={cn(
+                                // 1. Base Classes (Selalu ada)
                                 "absolute left-3 top-3 z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 shadow-sm transition-all",
+
+                                // 2. Logika Utama
                                 isSelected
-                                    ? "border-primary bg-primary text-white"
-                                    : "border-white bg-white/50 opacity-0 group-hover:opacity-100",
-                                selectionMode && "opacity-100"
+                                    ? // JIKA TERPILIH (Prioritas Tertinggi):
+                                    // Selalu Biru, teks putih, opacity penuh.
+                                    "border-primary bg-primary text-white opacity-100"
+                                    : // JIKA TIDAK TERPILIH:
+                                    // Cek apakah sedang dalam "Selection Mode"?
+                                    selectionMode
+                                        ? "opacity-100 border-gray-300 bg-white" // Ya Mode Seleksi: Lingkaran putih terlihat jelas
+                                        : "border-white bg-white/50 opacity-0 group-hover:opacity-100" // Bukan Mode Seleksi: Lingkaran transparan, muncul saat hover
                             )}
                         >
                             {isSelected && <Check className="h-3.5 w-3.5" />}
@@ -142,7 +167,7 @@ export function BookmarkCard({
 
                     {/* Folder Badge (ALWAYS VISIBLE) */}
                     <div className="absolute right-3 top-3 z-10">
-                        <span className="flex items-center gap-1.5 rounded-full bg-black/70 backdrop-blur-md px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm">
+                        <span className="flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-semibold text-white shadow-sm border border-white/10">
                             <FolderIcon className="h-3 w-3 opacity-80" />
                             <span className="truncate max-w-[80px]">{currentFolderName}</span>
                         </span>
@@ -150,9 +175,9 @@ export function BookmarkCard({
 
                     {/* Read Indicator */}
                     {bookmark.isRead && (
-                        <div className="absolute left-3 bottom-3 flex items-center gap-1 rounded-full bg-green-500/90 px-2 py-0.5 text-[9px] font-bold text-white shadow">
-                            <CheckCircle className="h-3 w-3" />
-                            <span>READ</span>
+                        <div className="absolute left-3 bottom-3 z-10 flex items-center gap-1 rounded-full bg-green-100 p-1 shadow-sm border border-green-200">
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <span className="text-xs font-semibold text-green-600">READ</span>
                         </div>
                     )}
 
@@ -164,21 +189,24 @@ export function BookmarkCard({
                         }
                         alt={bookmark.title}
                         onError={() => setImageError(true)}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        className={cn(
+                            "h-full w-full object-cover transition-transform duration-500 group-hover:scale-105",
+                            isRead && "grayscale-[50%]"
+                        )}
                     />
                 </div>
 
                 {/* ================= CONTENT ================= */}
                 <div className="flex flex-1 flex-col p-4">
-                    {/* Meta */}
+                    {/* Meta: Favicon + Original URL Display (FIXED) */}
                     <div className="mb-2 flex items-center gap-2 text-xs text-gray-500">
                         <img
                             src={faviconUrl}
                             className="h-4 w-4 rounded-sm"
                             onError={(e) => (e.currentTarget.style.display = "none")}
                         />
-                        <span className="truncate font-medium opacity-80">
-                            {bookmark.domain}
+                        <span className="truncate max-w-[200px] hover:text-primary transition-colors cursor-pointer" title={bookmark.url} onClick={(e) => { e.stopPropagation(); handleOpenLink() }}>
+                            {displayUrl}
                         </span>
                     </div>
 
@@ -188,7 +216,7 @@ export function BookmarkCard({
                         className={cn(
                             "mb-1 font-display text-base font-bold leading-tight line-clamp-2 cursor-pointer transition-colors",
                             bookmark.isRead
-                                ? "text-gray-500"
+                                ? "text-gray-500 line-through decoration-gray-300"
                                 : "text-gray-900 hover:text-primary"
                         )}
                     >
@@ -198,14 +226,22 @@ export function BookmarkCard({
                     {/* Tags */}
                     <div className="mb-4 flex-1">
                         <div className="flex flex-wrap gap-1 mt-2">
-                            {bookmark.tags?.slice(0, 3).map((tag) => (
-                                <span
-                                    key={tag.id || tag.label}
-                                    className="rounded-full border px-2 py-0.5 text-[10px] font-bold text-gray-600 bg-gray-100"
-                                >
-                                    {tag.label}
-                                </span>
-                            ))}
+                            {bookmark.tags && bookmark.tags.length > 0 ? (
+                                bookmark.tags.slice(0, 3).map((tag) => (
+                                    <span
+                                        key={tag.id || tag.label}
+                                        className={cn(
+                                            "rounded-full border px-2 py-0.5 text-[10px] font-bold",
+                                            tag.color ? tag.color.replace('text-', 'bg-opacity-10 border-opacity-20 text-') : "bg-gray-100 text-gray-600 border-gray-200"
+                                        )}
+                                        style={tag.color ? { backgroundColor: `var(--${tag.color}-50)` } : {}}
+                                    >
+                                        {tag.label}
+                                    </span>
+                                ))
+                            ) : (
+                                <span className="text-[10px] text-gray-400 italic">No tags</span>
+                            )}
                         </div>
                     </div>
 
@@ -245,57 +281,54 @@ export function BookmarkCard({
 
                             {/* Dropdown */}
                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className="p-1.5 rounded-md text-gray-400 hover:bg-gray-100">
+                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                    <button className="p-1.5 rounded-md text-gray-400 hover:bg-gray-100 outline-none">
                                         <MoreHorizontal className="h-4 w-4" />
                                     </button>
                                 </DropdownMenuTrigger>
-
                                 <DropdownMenuContent align="end" className="w-56 p-1">
-                                    <DropdownMenuItem onClick={handleOpenLink}>
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        Lihat Detail
+                                    <DropdownMenuItem onClick={handleOpenLink} className="cursor-pointer">
+                                        <Eye className="mr-2 h-4 w-4 text-gray-500" />
+                                        View Details
                                     </DropdownMenuItem>
 
+                                    <DropdownMenuItem onClick={copyLink} className="cursor-pointer">
+                                        <Copy className="mr-2 h-4 w-4 text-gray-500" />
+                                        Copy Link
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem
                                         onClick={() => toggleFavorite(bookmark.id)}
+                                        className="cursor-pointer"
                                     >
-                                        <Heart className="mr-2 h-4 w-4" />
-                                        {bookmark.isFavorite
-                                            ? "Hapus dari Favorit"
-                                            : "Tambah ke Favorit"}
+                                        <Heart className={cn("mr-2 h-4 w-4", bookmark.isFavorite ? "fill-orange-500 text-orange-500" : "text-gray-500")} />
+                                        {bookmark.isFavorite ? "Remove from Favorites" : "Add to Favorites"}
                                     </DropdownMenuItem>
-
                                     <DropdownMenuItem
-                                        onClick={
-                                            bookmark.isRead
-                                                ? handleMarkAsUnread
-                                                : handleMarkAsRead
-                                        }
+                                        onClick={isRead ? handleMarkAsUnread : handleMarkAsRead}
+                                        className="cursor-pointer"
                                     >
-                                        <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-                                        {bookmark.isRead
-                                            ? "Tandai Belum Dibaca"
-                                            : "Tandai Sudah Dibaca"}
+                                        {isRead ? (
+                                            <XCircle className="mr-2 h-4 w-4 text-gray-500" />
+                                        ) : (
+                                            <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                                        )}
+                                        {isRead ? "Mark as Unread" : "Mark as Read"}
                                     </DropdownMenuItem>
-
                                     <DropdownMenuSeparator />
-
                                     <DropdownMenuSub>
-                                        <DropdownMenuSubTrigger>
-                                            <FolderInput className="mr-2 h-4 w-4" />
-                                            Pindah ke Folder
+                                        <DropdownMenuSubTrigger className="cursor-pointer">
+                                            <FolderInput className="mr-2 h-4 w-4 text-gray-500" />
+                                            Move to Folder
                                         </DropdownMenuSubTrigger>
-                                        <DropdownMenuSubContent className="max-h-60 overflow-y-auto">
+                                        <DropdownMenuSubContent className="w-48 p-1 max-h-60 overflow-y-auto">
                                             {folders.map((f) => (
                                                 <DropdownMenuItem
                                                     key={f.id}
-                                                    onClick={() =>
-                                                        handleMoveToFolder(f.id, f.name)
-                                                    }
+                                                    onClick={() => handleMoveToFolder(f.id, f.name)}
+                                                    className="cursor-pointer"
                                                 >
-                                                    <FolderIcon className="mr-2 h-4 w-4" />
-                                                    {f.name}
+                                                    <FolderIcon className="mr-2 h-3.5 w-3.5 text-gray-400" />
+                                                    <span className="truncate">{f.name}</span>
                                                     {bookmark.folderId === f.id && (
                                                         <Check className="ml-auto h-3 w-3 text-primary" />
                                                     )}
@@ -303,27 +336,24 @@ export function BookmarkCard({
                                             ))}
                                         </DropdownMenuSubContent>
                                     </DropdownMenuSub>
-
                                     <DropdownMenuItem
                                         onClick={() => setEditOpen(true)}
+                                        className="cursor-pointer"
                                     >
-                                        <Edit2 className="mr-2 h-4 w-4" />
+                                        <Edit2 className="mr-2 h-4 w-4 text-gray-500" />
                                         Edit
                                     </DropdownMenuItem>
-
-                                    <DropdownMenuItem onClick={handleArchive}>
-                                        <Archive className="mr-2 h-4 w-4" />
-                                        Arsipkan
+                                    <DropdownMenuItem className="cursor-pointer">
+                                        <Archive className="mr-2 h-4 w-4 text-gray-500" />
+                                        Archive
                                     </DropdownMenuItem>
-
                                     <DropdownMenuSeparator />
-
                                     <DropdownMenuItem
                                         onClick={() => removeBookmark(bookmark.id)}
-                                        className="text-red-600 focus:bg-red-50"
+                                        className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
                                     >
                                         <Trash2 className="mr-2 h-4 w-4" />
-                                        Hapus
+                                        Delete
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
