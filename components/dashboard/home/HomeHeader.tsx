@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Search, Command, Link2, ArrowRight, Sparkles } from "lucide-react";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 interface HomeHeaderProps {
     onSearchClick?: () => void;
@@ -15,6 +16,10 @@ const getGreeting = (): string => {
     if (hour < 12) return "Good morning";
     if (hour < 18) return "Good afternoon";
     return "Good evening";
+};
+
+const getDisplayName = (user: { name: string; email: string; avatar: string } | null): string => {
+    return user?.name || user?.email?.split("@")[0] || "User";
 };
 
 const isValidUrl = (string: string): boolean => {
@@ -30,6 +35,8 @@ export function HomeHeader({ onSearchClick }: HomeHeaderProps) {
     const [captureUrl, setCaptureUrl] = useState("");
     const [isCapturing, setIsCapturing] = useState(false);
     const { addBookmark } = useBookmarks();
+    const { user } = useAuth();
+    const displayName = getDisplayName(user);
 
     const handleQuickCapture = useCallback(
         async (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -65,7 +72,7 @@ export function HomeHeader({ onSearchClick }: HomeHeaderProps) {
             {/* Greeting */}
             <div>
                 <h1 className="font-display text-3xl font-bold">
-                    {getGreeting()}! ☀️
+                    {getGreeting()}, {displayName}! ☀️
                 </h1>
                 <p className="mt-1 text-foreground/60">
                     Ready to organize your second brain?
