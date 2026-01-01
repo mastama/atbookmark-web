@@ -6,11 +6,13 @@ import { persist } from "zustand/middleware";
 // --- Types ---
 export type Theme = "light" | "dark" | "system";
 export type Density = "comfortable" | "compact";
+export type AppIcon = "default" | "mint" | "coral" | "lavender";
 
 export interface SettingsState {
     // Appearance
     theme: Theme;
     density: Density;
+    appIcon: AppIcon;
 
     // Intelligence (Pro Features)
     enableAutoTagging: boolean;
@@ -30,6 +32,7 @@ export interface SettingsState {
 const DEFAULT_SETTINGS: Omit<SettingsState, "updateSettings" | "resetSettings"> = {
     theme: "light",
     density: "comfortable",
+    appIcon: "default",
     enableAutoTagging: false,
     enableAutoSummary: false,
     autoArchiveDays: 0,
