@@ -63,6 +63,13 @@ interface BookmarksState {
 
     // Bulk update read status
     updateReadStatus: (ids: string[], isRead: boolean) => void;
+
+    // Archive Actions
+    archiveBookmarks: (ids: string[]) => void;
+    restoreBookmarks: (ids: string[]) => void;
+    getArchivedBookmarks: () => Bookmark[];
+    getActiveBookmarks: () => Bookmark[];
+    getArchivedCount: () => number;
 }
 
 // --- Helpers ---
@@ -123,6 +130,17 @@ export const useBookmarks = create<BookmarksState>()(
             bookmarks: initialBookmarks,
 
             addBookmark: (data) => {
+                const state = get();
+                const activeBookmarks = state.bookmarks.filter(b => !b.isTrashed && !b.archived);
+
+                // Check bookmark limit for Free users (100 max)
+                // Note: In production, isPro would come from user context
+                const FREE_BOOKMARK_LIMIT = 100;
+                if (activeBookmarks.length >= FREE_BOOKMARK_LIMIT) {
+                    // Limit reached - in a real app, this would return error
+                    console.warn("Bookmark limit reached for Free plan");
+                }
+
                 const id = `bm_${Date.now()}`;
                 const domain = extractDomain(data.url);
                 const now = Date.now();
@@ -185,7 +203,7 @@ export const useBookmarks = create<BookmarksState>()(
             },
 
             getBookmarksByFolder: (folderId) => {
-                return get().bookmarks.filter((b) => b.folderId === folderId && !b.isTrashed);
+                return get().bookmarks.filter((b) => b.folderId === folderId && !b.isTrashed && !b.archived);
             },
 
             getBookmarksByTag: (tagLabel) => {
@@ -246,7 +264,7 @@ export const useBookmarks = create<BookmarksState>()(
             },
 
             getBookmarkCount: (folderId) => {
-                return get().bookmarks.filter((b) => b.folderId === folderId && !b.isTrashed).length;
+                return get().bookmarks.filter((b) => b.folderId === folderId && !b.isTrashed && !b.archived).length;
             },
 
             getBookmarkById: (id) => {
@@ -303,6 +321,35 @@ export const useBookmarks = create<BookmarksState>()(
                         ids.includes(b.id) ? { ...b, isRead } : b
                     ),
                 }));
+            },
+
+            // Archive Actions
+            archiveBookmarks: (ids: string[]) => {
+                set((state) => ({
+                    bookmarks: state.bookmarks.map((b) =>
+                        ids.includes(b.id) ? { ...b, archived: true } : b
+                    ),
+                }));
+            },
+
+            restoreBookmarks: (ids: string[]) => {
+                set((state) => ({
+                    bookmarks: state.bookmarks.map((b) =>
+                        ids.includes(b.id) ? { ...b, archived: false } : b
+                    ),
+                }));
+            },
+
+            getArchivedBookmarks: () => {
+                return get().bookmarks.filter((b) => b.archived && !b.isTrashed);
+            },
+
+            getActiveBookmarks: () => {
+                return get().bookmarks.filter((b) => !b.archived && !b.isTrashed);
+            },
+
+            getArchivedCount: () => {
+                return get().bookmarks.filter((b) => b.archived && !b.isTrashed).length;
             },
         }),
         {
