@@ -57,7 +57,7 @@ const APP_ICONS = [
 export default function SettingsPage() {
     const { user } = useAuth();
     const { isPro, folders, tags } = useOrganization();
-    const { theme, density, enableAutoTagging, enableAutoSummary, autoArchiveDays, updateSettings } = useSettings();
+    const { theme, density, appIcon, enableAutoTagging, enableAutoSummary, autoArchiveDays, updateSettings } = useSettings();
 
     const [activeTab, setActiveTab] = useState<SettingsTab>("general");
     const [saving, setSaving] = useState(false);
@@ -67,7 +67,30 @@ export default function SettingsPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar || null);
     const [displayName, setDisplayName] = useState(user?.name || "");
-    const [selectedIcon, setSelectedIcon] = useState("default");
+    // Favicon helper for app icon
+    const updateFavicon = (iconId: string) => {
+        const faviconMap: Record<string, string> = {
+            default: "🔖",
+            mint: "📗",
+            coral: "📕",
+            lavender: "📘",
+        };
+        // Create a simple emoji favicon using canvas
+        const canvas = document.createElement("canvas");
+        canvas.width = 32;
+        canvas.height = 32;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+            ctx.font = "28px serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(faviconMap[iconId] || "🔖", 16, 18);
+            const favicon = document.querySelector<HTMLLinkElement>("link[rel*='icon']");
+            if (favicon) {
+                favicon.href = canvas.toDataURL();
+            }
+        }
+    };
 
     // Handlers
     const handleProFeature = () => {
@@ -152,7 +175,7 @@ export default function SettingsPage() {
                                         "flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all",
                                         isActive
                                             ? "bg-primary text-white shadow-brutal-sm"
-                                            : "bg-surface border-2 border-border hover:bg-gray-50"
+                                            : "bg-surface border-2 border-border hover:bg-gray-50 dark:hover:bg-muted"
                                     )}
                                 >
                                     <Icon className="h-4 w-4" />
@@ -224,7 +247,7 @@ export default function SettingsPage() {
                                         <Input
                                             value={user?.email || "user@example.com"}
                                             disabled
-                                            className="bg-gray-50"
+                                            className="bg-gray-50 dark:bg-muted"
                                         />
                                     </div>
 
@@ -282,32 +305,47 @@ export default function SettingsPage() {
                         <div className="space-y-8">
                             {/* Theme */}
                             <section className="rounded-2xl border-2 border-border bg-surface p-6">
-                                <h2 className="font-display text-lg font-bold mb-4">Theme</h2>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="font-display text-lg font-bold">Theme</h2>
+                                    {!isPro && (
+                                        <span className="flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-100 px-2 py-1 rounded-full">
+                                            <Crown className="h-3 w-3" />
+                                            Dark & System = PRO
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="flex flex-wrap gap-3">
                                     {[
-                                        { value: "light", label: "Light", icon: Sun },
-                                        { value: "dark", label: "Dark", icon: Moon },
-                                        { value: "system", label: "System", icon: Monitor },
+                                        { value: "light", label: "Light", icon: Sun, proOnly: false },
+                                        { value: "dark", label: "Dark", icon: Moon, proOnly: true },
+                                        { value: "system", label: "System", icon: Monitor, proOnly: true },
                                     ].map((opt) => {
                                         const Icon = opt.icon;
                                         const isActive = theme === opt.value;
+                                        const isLocked = opt.proOnly && !isPro;
                                         return (
                                             <button
                                                 key={opt.value}
                                                 onClick={() => {
-                                                    updateSettings({ theme: opt.value as typeof theme });
-                                                    toast.success(`Theme set to ${opt.label}`);
+                                                    if (isLocked) {
+                                                        handleProFeature();
+                                                    } else {
+                                                        updateSettings({ theme: opt.value as typeof theme });
+                                                        toast.success(`Theme set to ${opt.label}`);
+                                                    }
                                                 }}
                                                 className={cn(
-                                                    "flex items-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all",
-                                                    isActive
+                                                    "relative flex items-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all",
+                                                    isActive && !isLocked
                                                         ? "border-primary bg-primary/10 shadow-brutal-sm"
-                                                        : "border-border hover:bg-gray-50"
+                                                        : "border-border hover:bg-gray-50 dark:hover:bg-muted",
+                                                    isLocked && "opacity-50 cursor-not-allowed"
                                                 )}
                                             >
                                                 <Icon className="h-4 w-4" />
                                                 {opt.label}
-                                                {isActive && <Check className="h-4 w-4 text-primary" />}
+                                                {isActive && !isLocked && <Check className="h-4 w-4 text-primary" />}
+                                                {isLocked && <Lock className="h-3 w-3 text-gray-400" />}
                                             </button>
                                         );
                                     })}
@@ -316,29 +354,50 @@ export default function SettingsPage() {
 
                             {/* Density */}
                             <section className="rounded-2xl border-2 border-border bg-surface p-6">
-                                <h2 className="font-display text-lg font-bold mb-4">Card Density</h2>
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h2 className="font-display text-lg font-bold">Card Density</h2>
+                                        <p className="text-xs text-foreground/50 mt-1">Control how much content you see at once</p>
+                                    </div>
+                                    {!isPro && (
+                                        <span className="flex items-center gap-1 text-xs font-bold text-amber-600 bg-amber-100 px-2 py-1 rounded-full">
+                                            <Crown className="h-3 w-3" />
+                                            Compact = PRO
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="flex flex-wrap gap-3">
                                     {[
-                                        { value: "comfortable", label: "Comfortable" },
-                                        { value: "compact", label: "Compact" },
+                                        { value: "comfortable", label: "Comfortable", description: "Spacious layout", proOnly: false },
+                                        { value: "compact", label: "Compact", description: "View more items", proOnly: true },
                                     ].map((opt) => {
                                         const isActive = density === opt.value;
+                                        const isLocked = opt.proOnly && !isPro;
                                         return (
                                             <button
                                                 key={opt.value}
                                                 onClick={() => {
-                                                    updateSettings({ density: opt.value as typeof density });
-                                                    toast.success(`Density set to ${opt.label}`);
+                                                    if (isLocked) {
+                                                        handleProFeature();
+                                                    } else {
+                                                        updateSettings({ density: opt.value as typeof density });
+                                                        toast.success(`Density set to ${opt.label}`);
+                                                    }
                                                 }}
                                                 className={cn(
-                                                    "rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all",
-                                                    isActive
+                                                    "relative flex flex-col items-start rounded-xl border-2 px-4 py-3 text-left transition-all",
+                                                    isActive && !isLocked
                                                         ? "border-primary bg-primary/10 shadow-brutal-sm"
-                                                        : "border-border hover:bg-gray-50"
+                                                        : "border-border hover:bg-gray-50 dark:hover:bg-muted",
+                                                    isLocked && "opacity-50 cursor-not-allowed"
                                                 )}
                                             >
-                                                {opt.label}
-                                                {isActive && <Check className="ml-2 inline h-4 w-4 text-primary" />}
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-medium">{opt.label}</span>
+                                                    {isActive && !isLocked && <Check className="h-4 w-4 text-primary" />}
+                                                    {isLocked && <Lock className="h-3 w-3 text-gray-400" />}
+                                                </div>
+                                                <span className="text-xs text-foreground/50">{opt.description}</span>
                                             </button>
                                         );
                                     })}
@@ -358,7 +417,7 @@ export default function SettingsPage() {
                                 </div>
                                 <div className="flex flex-wrap gap-3">
                                     {APP_ICONS.map((icon) => {
-                                        const isActive = selectedIcon === icon.id;
+                                        const isActive = appIcon === icon.id;
                                         const isLocked = !isPro && icon.id !== "default";
                                         return (
                                             <button
@@ -367,7 +426,8 @@ export default function SettingsPage() {
                                                     if (isLocked) {
                                                         handleProFeature();
                                                     } else {
-                                                        setSelectedIcon(icon.id);
+                                                        updateSettings({ appIcon: icon.id as typeof appIcon });
+                                                        updateFavicon(icon.id);
                                                         toast.success(`Icon changed!`);
                                                     }
                                                 }}
@@ -520,7 +580,7 @@ export default function SettingsPage() {
                                     disabled={!isPro}
                                     className={cn(
                                         "w-full rounded-xl border-2 border-border bg-surface px-4 py-3 text-sm font-medium focus:border-primary focus:outline-none",
-                                        !isPro && "opacity-50 cursor-not-allowed bg-gray-50"
+                                        !isPro && "opacity-50 cursor-not-allowed bg-gray-50 dark:bg-muted"
                                     )}
                                 >
                                     <option value={0}>Disabled</option>
@@ -539,12 +599,15 @@ export default function SettingsPage() {
                             <section className={cn(
                                 "rounded-2xl border-2 p-6",
                                 isPro
-                                    ? "border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50"
+                                    ? "border-amber-400 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 dark:border-amber-600"
                                     : "border-border bg-surface"
                             )}>
                                 <div className="flex items-center justify-between mb-4">
                                     <div>
-                                        <h2 className="font-display text-xl font-bold flex items-center gap-2">
+                                        <h2 className={cn(
+                                            "font-display text-xl font-bold flex items-center gap-2",
+                                            isPro ? "text-amber-900 dark:text-amber-100" : ""
+                                        )}>
                                             {isPro ? (
                                                 <>
                                                     <Crown className="h-5 w-5 text-amber-500" />
@@ -554,14 +617,17 @@ export default function SettingsPage() {
                                                 "Free Plan"
                                             )}
                                         </h2>
-                                        <p className="text-sm text-foreground/60 mt-1">
+                                        <p className={cn(
+                                            "text-sm mt-1",
+                                            isPro ? "text-amber-800 dark:text-amber-200" : "text-foreground/60"
+                                        )}>
                                             {isPro
                                                 ? "You have unlimited access to all features."
                                                 : "Upgrade to Pro for unlimited folders, tags, and AI features."}
                                         </p>
                                     </div>
                                     {isPro && (
-                                        <span className="flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-200 px-3 py-1.5 rounded-full">
+                                        <span className="flex items-center gap-1 text-xs font-bold text-amber-800 bg-amber-200 dark:bg-amber-700 dark:text-amber-100 px-3 py-1.5 rounded-full">
                                             <Check className="h-3 w-3" />
                                             ACTIVE
                                         </span>
@@ -571,7 +637,7 @@ export default function SettingsPage() {
                                 {!isPro && (
                                     <Button onClick={handleProFeature} className="bg-primary">
                                         <Crown className="mr-2 h-4 w-4" />
-                                        Upgrade to Pro — $9/month
+                                        Upgrade to Pro
                                     </Button>
                                 )}
                             </section>
