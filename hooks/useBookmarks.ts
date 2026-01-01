@@ -60,6 +60,9 @@ interface BookmarksState {
 
     // FIX 3: Bulk delete tags support
     removeTagsFromBookmarks: (tagNames: string[]) => void;
+
+    // Bulk update read status
+    updateReadStatus: (ids: string[], isRead: boolean) => void;
 }
 
 // --- Helpers ---
@@ -157,10 +160,21 @@ export const useBookmarks = create<BookmarksState>()(
             },
 
             removeBookmark: (id) => {
+                const bookmark = get().bookmarks.find((b) => b.id === id);
+
+                if (!bookmark) return;
+
+                const confirmDelete = window.confirm(
+                    `Are you sure you want to delete the following bookmark?\n\n"${bookmark.title}"\n\nThis action cannot be undone.`
+                );
+
+                if (!confirmDelete) return;
+
                 set((state) => ({
                     bookmarks: state.bookmarks.filter((b) => b.id !== id),
                 }));
             },
+
 
             toggleFavorite: (id) => {
                 set((state) => ({
@@ -279,6 +293,15 @@ export const useBookmarks = create<BookmarksState>()(
                             (t) => !targets.includes(t.label)
                         ),
                     })),
+                }));
+            },
+
+            // Bulk update read status for multiple bookmarks
+            updateReadStatus: (ids: string[], isRead: boolean) => {
+                set((state) => ({
+                    bookmarks: state.bookmarks.map((b) =>
+                        ids.includes(b.id) ? { ...b, isRead } : b
+                    ),
                 }));
             },
         }),
