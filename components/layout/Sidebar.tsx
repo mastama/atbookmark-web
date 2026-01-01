@@ -46,7 +46,7 @@ const navGroups = [
     {
         label: "Smart Views",
         items: [
-            { label: "Archives", href: "/dashboard/archives", icon: LucideArchive, isPro: true, isDev: false }, // Anggap Archives sudah jadi tapi Pro
+            { label: "Archives", href: "/dashboard/archives", icon: LucideArchive, isPro: true, isDev: false },
             { label: "AI Curated", href: "/dashboard/ai-curated", icon: Sparkles, isPro: true, isDev: true }, // Masih development
             { label: "Knowledge Graph", href: "/dashboard/knowledge", icon: Brain, isPro: true, isDev: true }, // Masih development
             { label: "RAM Saver", href: "/dashboard/ram-saver", icon: TrendingDown, isPro: true, isDev: true }, // Masih development
