@@ -18,7 +18,8 @@ import {
     ChevronRight,
     GripVertical,
     LucideArchive,
-    Lock, // Added Lock icon
+    Lock,
+    Puzzle,
 } from "lucide-react";
 import { useState, DragEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -46,10 +47,16 @@ const navGroups = [
     {
         label: "Smart Views",
         items: [
-            { label: "Archives", href: "/dashboard/archives", icon: LucideArchive, isPro: true, isDev: false },
-            { label: "AI Curated", href: "/dashboard/ai-curated", icon: Sparkles, isPro: true, isDev: true }, // Masih development
-            { label: "Knowledge Graph", href: "/dashboard/knowledge", icon: Brain, isPro: true, isDev: true }, // Masih development
-            { label: "RAM Saver", href: "/dashboard/ram-saver", icon: TrendingDown, isPro: true, isDev: true }, // Masih development
+            { label: "Archives", href: "/dashboard/archives", icon: LucideArchive, isPro: false, isDev: false },
+            { label: "AI Curated", href: "/dashboard/ai-curated", icon: Sparkles, isPro: true, isDev: true },
+            { label: "Knowledge Graph", href: "/dashboard/knowledge", icon: Brain, isPro: true, isDev: true },
+            { label: "RAM Saver", href: "/dashboard/ram-saver", icon: TrendingDown, isPro: true, isDev: true },
+        ],
+    },
+    {
+        label: "Tools",
+        items: [
+            { label: "Extension", href: "/dashboard/extension", icon: Puzzle, isPro: false, isDev: false },
         ],
     },
 ];
