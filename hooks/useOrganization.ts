@@ -58,8 +58,8 @@ interface OrganizationState {
     setIsPro: (isPro: boolean) => void;
 }
 
-const FREE_FOLDER_LIMIT = 3;
-const FREE_TAG_LIMIT = 3;
+const FREE_FOLDER_LIMIT = 5;
+const FREE_TAG_LIMIT = 5;
 const PINNED_TAG_LIMIT = 5;
 
 const colorOptions: FolderColor[] = ["mint", "lavender", "coral", "sky", "yellow"];

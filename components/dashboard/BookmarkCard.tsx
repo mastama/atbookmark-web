@@ -12,6 +12,7 @@ import {
     Eye,
     CheckCircle,
     Archive,
+    ArchiveRestore,
     FolderInput,
     Folder as FolderIcon,
     XCircle,
@@ -21,6 +22,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Bookmark, useBookmarks } from "@/hooks/useBookmarks";
 import { useOrganization } from "@/hooks/useOrganization";
 import { EditBookmarkModal } from "@/components/modals/EditBookmarkModal";
+import { ProModal } from "@/components/modals/ProModal";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -40,6 +42,7 @@ interface BookmarkCardProps {
     isSelected?: boolean;
     onSelect?: (id: string) => void;
     selectionMode?: boolean;
+    isArchivedView?: boolean;
 }
 
 export function BookmarkCard({
@@ -48,15 +51,21 @@ export function BookmarkCard({
     isSelected = false,
     onSelect,
     selectionMode = false,
+    isArchivedView = false,
 }: BookmarkCardProps) {
     const {
         toggleFavorite,
         removeBookmark,
         moveBookmarks,
         updateBookmark,
+        restoreBookmarks,
+        archiveBookmarks,
+        getArchivedCount,
     } = useBookmarks();
 
-    const { folders } = useOrganization();
+    const { folders, isPro } = useOrganization();
+
+    const [proModalOpen, setProModalOpen] = useState(false);
 
     const [editOpen, setEditOpen] = useState(false);
     const [imageError, setImageError] = useState(false);
@@ -89,9 +98,25 @@ export function BookmarkCard({
         toast.success(`Moved to ${targetFolderName}`);
     };
 
+    const FREE_ARCHIVE_LIMIT = 5;
+
     const handleArchive = () => {
-        updateBookmark(bookmark.id, { archived: true });
-        toast.success("Archived");
+        // Check archive limit for Free users
+        if (!isPro && getArchivedCount() >= FREE_ARCHIVE_LIMIT) {
+            toast.error("Free plan limit: 5 archived items max. Upgrade to Pro for unlimited!", {
+                icon: "🔒",
+                duration: 4000,
+            });
+            setProModalOpen(true);
+            return;
+        }
+        archiveBookmarks([bookmark.id]);
+        toast.success("Moved to Archive");
+    };
+
+    const handleRestore = () => {
+        restoreBookmarks([bookmark.id]);
+        toast.success("Restored from Archive");
     };
 
     const handleMarkAsRead = () => {
@@ -174,10 +199,18 @@ export function BookmarkCard({
                     </div>
 
                     {/* Read Indicator */}
-                    {bookmark.isRead && (
+                    {bookmark.isRead && !isArchivedView && (
                         <div className="absolute left-3 bottom-3 z-10 flex items-center gap-1 rounded-full bg-green-100 p-1 shadow-sm border border-green-200">
                             <CheckCircle className="h-4 w-4 text-green-600" />
                             <span className="text-xs font-semibold text-green-600">READ</span>
+                        </div>
+                    )}
+
+                    {/* Archived Badge */}
+                    {isArchivedView && (
+                        <div className="absolute left-3 bottom-3 z-10 flex items-center gap-1 rounded-full bg-gray-200 p-1 shadow-sm border border-gray-300">
+                            <Archive className="h-4 w-4 text-gray-600" />
+                            <span className="text-xs font-semibold text-gray-600">ARCHIVED</span>
                         </div>
                     )}
 
@@ -191,7 +224,7 @@ export function BookmarkCard({
                         onError={() => setImageError(true)}
                         className={cn(
                             "h-full w-full object-cover transition-transform duration-500 group-hover:scale-105",
-                            isRead && "grayscale-[50%]"
+                            (isRead || isArchivedView) && "grayscale"
                         )}
                     />
                 </div>
@@ -343,10 +376,17 @@ export function BookmarkCard({
                                         <Edit2 className="mr-2 h-4 w-4 text-gray-500" />
                                         Edit
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem className="cursor-pointer">
-                                        <Archive className="mr-2 h-4 w-4 text-gray-500" />
-                                        Archive
-                                    </DropdownMenuItem>
+                                    {isArchivedView ? (
+                                        <DropdownMenuItem onClick={handleRestore} className="cursor-pointer text-green-600">
+                                            <ArchiveRestore className="mr-2 h-4 w-4" />
+                                            Restore
+                                        </DropdownMenuItem>
+                                    ) : (
+                                        <DropdownMenuItem onClick={handleArchive} className="cursor-pointer">
+                                            <Archive className="mr-2 h-4 w-4 text-gray-500" />
+                                            Archive
+                                        </DropdownMenuItem>
+                                    )}
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                         onClick={() => removeBookmark(bookmark.id)}
@@ -366,6 +406,11 @@ export function BookmarkCard({
                 isOpen={editOpen}
                 onClose={() => setEditOpen(false)}
                 bookmark={bookmark}
+            />
+
+            <ProModal
+                isOpen={proModalOpen}
+                onClose={() => setProModalOpen(false)}
             />
         </>
     );
