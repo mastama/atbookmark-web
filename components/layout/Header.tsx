@@ -56,7 +56,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={onMenuClick}
-                        className="rounded-lg p-2 hover:bg-gray-100 lg:hidden"
+                        className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-muted lg:hidden"
                     >
                         <Menu className="h-5 w-5" />
                     </button>
@@ -98,7 +98,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                     </Button>
 
                     {/* Notifications */}
-                    <button className="relative rounded-lg p-2 hover:bg-gray-100">
+                    <button className="relative rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-muted">
                         <Bell className="h-5 w-5" />
                         <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-accent-coral" />
                     </button>
@@ -107,7 +107,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                     <div className="relative" ref={dropdownRef}>
                         <button
                             onClick={() => setProfileOpen(!profileOpen)}
-                            className="flex items-center gap-2 rounded-xl border-2 border-border p-1.5 pr-3 hover:bg-gray-50 shadow-brutal-sm"
+                            className="flex items-center gap-2 rounded-xl border-2 border-border p-1.5 pr-3 hover:bg-gray-50 dark:hover:bg-muted shadow-brutal-sm"
                         >
                             <div className="h-8 w-8 overflow-hidden rounded-lg border border-border bg-accent-lavender">
                                 {user?.avatar ? (

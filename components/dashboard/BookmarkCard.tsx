@@ -21,6 +21,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { Bookmark, useBookmarks } from "@/hooks/useBookmarks";
 import { useOrganization } from "@/hooks/useOrganization";
+import { useDensity } from "@/components/providers/ThemeProvider";
 import { EditBookmarkModal } from "@/components/modals/EditBookmarkModal";
 import { ProModal } from "@/components/modals/ProModal";
 import { cn } from "@/lib/utils";
@@ -53,6 +54,7 @@ export function BookmarkCard({
     selectionMode = false,
     isArchivedView = false,
 }: BookmarkCardProps) {
+    const { isCompact } = useDensity();
     const {
         toggleFavorite,
         removeBookmark,
@@ -147,16 +149,20 @@ export function BookmarkCard({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 className={cn(
-                    "group relative flex flex-col overflow-hidden rounded-2xl border-2 bg-white transition-all hover:shadow-brutal-sm",
+                    "group relative flex flex-col overflow-hidden border-2 bg-white dark:bg-card transition-all hover:shadow-brutal-sm",
+                    isCompact ? "rounded-xl" : "rounded-2xl",
                     isSelected
                         ? "border-primary ring-1 ring-primary"
                         : "border-border",
-                    bookmark.isRead && "opacity-75 bg-gray-50"
+                    bookmark.isRead && "opacity-75 bg-gray-50 dark:bg-muted"
                 )}
             >
                 {/* ================= COVER IMAGE ================= */}
                 <div
-                    className="relative aspect-[1.6/1] w-full overflow-hidden bg-gray-50 cursor-pointer"
+                    className={cn(
+                        "relative w-full overflow-hidden bg-gray-50 dark:bg-muted cursor-pointer",
+                        isCompact ? "aspect-[2/1]" : "aspect-[1.6/1]"
+                    )}
                     onClick={() =>
                         selectionMode && onSelect
                             ? onSelect(bookmark.id)
@@ -230,7 +236,7 @@ export function BookmarkCard({
                 </div>
 
                 {/* ================= CONTENT ================= */}
-                <div className="flex flex-1 flex-col p-4">
+                <div className={cn("flex flex-1 flex-col", isCompact ? "p-3" : "p-4")}>
                     {/* Meta: Favicon + Original URL Display (FIXED) */}
                     <div className="mb-2 flex items-center gap-2 text-xs text-gray-500">
                         <img
@@ -247,10 +253,11 @@ export function BookmarkCard({
                     <h3
                         onClick={handleOpenLink}
                         className={cn(
-                            "mb-1 font-display text-base font-bold leading-tight line-clamp-2 cursor-pointer transition-colors",
+                            "mb-1 font-display font-bold leading-tight line-clamp-2 cursor-pointer transition-colors",
+                            isCompact ? "text-sm" : "text-base",
                             bookmark.isRead
-                                ? "text-gray-500 line-through decoration-gray-300"
-                                : "text-gray-900 hover:text-primary"
+                                ? "text-gray-500 dark:text-muted-foreground line-through decoration-gray-300"
+                                : "text-gray-900 dark:text-foreground hover:text-primary"
                         )}
                     >
                         {bookmark.title}
