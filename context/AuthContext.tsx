@@ -1,61 +1,57 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 interface AuthContextType {
     isAuthenticated: boolean;
-    user: { name: string; email: string; avatar: string } | null;
-    login: () => void;
-    logout: () => void;
+    user: User | null;
+    isLoading: boolean;
+    logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const MOCK_USER = {
-    name: "Alex Reader",
-    email: "alex@example.com",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=alex",
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
-    const pathname = usePathname();
 
     useEffect(() => {
-        // Check localStorage for mock session
-        const session = localStorage.getItem("atbookmark_session");
-        setIsAuthenticated(session === "authenticated");
-        setIsLoading(false);
+        const supabase = createClient();
+
+        // Get initial session
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            setUser(user);
+            setIsLoading(false);
+        });
+
+        // Listen for auth changes
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+            setIsLoading(false);
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
-    useEffect(() => {
-        // Redirect logic for protected routes
-        if (!isLoading) {
-            const protectedRoutes = ["/dashboard"];
-            const isProtected = protectedRoutes.some((route) => pathname.startsWith(route));
+    const logout = async () => {
+        const supabase = createClient();
+        await supabase.auth.signOut();
 
-            if (isProtected && !isAuthenticated) {
-                router.push("/login");
-            }
-        }
-    }, [isAuthenticated, isLoading, pathname, router]);
+        // Clear all persisted Zustand stores to prevent data bleeding between users
+        localStorage.removeItem("atbookmark-organization");
+        localStorage.removeItem("atbookmark-settings");
+        localStorage.removeItem("atbookmark-bookmarks");
 
-    const login = () => {
-        localStorage.setItem("atbookmark_session", "authenticated");
-        setIsAuthenticated(true);
-        toast.success("Welcome back! 🌊");
-        router.push("/dashboard");
-    };
-
-    const logout = () => {
-        localStorage.removeItem("atbookmark_session");
-        setIsAuthenticated(false);
         toast.success("You've been logged out safely 👋");
         router.push("/login");
+        router.refresh();
     };
 
     if (isLoading) {
@@ -69,9 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return (
         <AuthContext.Provider
             value={{
-                isAuthenticated,
-                user: isAuthenticated ? MOCK_USER : null,
-                login,
+                isAuthenticated: !!user,
+                user,
+                isLoading,
                 logout,
             }}
         >
