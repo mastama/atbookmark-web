@@ -34,6 +34,7 @@ import { useOrganization } from "@/hooks/useOrganization";
 import { useSettings } from "@/hooks/useSettings";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { ProModal } from "@/components/modals/ProModal";
+import { updateUserProfile } from "@/actions/sidebar";
 import { cn } from "@/lib/utils";
 
 // Tab Types
@@ -65,8 +66,8 @@ export default function SettingsPage() {
 
     // Profile State
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar || null);
-    const [displayName, setDisplayName] = useState(user?.name || "");
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.user_metadata?.avatar_url || null);
+    const [displayName, setDisplayName] = useState(user?.user_metadata?.full_name || user?.email?.split('@')[0] || "");
     // Favicon helper for app icon
     const updateFavicon = (iconId: string) => {
         const faviconMap: Record<string, string> = {
@@ -112,9 +113,19 @@ export default function SettingsPage() {
 
     const handleSaveProfile = async () => {
         setSaving(true);
-        await new Promise((r) => setTimeout(r, 800));
+
+        // Call server action to persist to database
+        const result = await updateUserProfile(displayName, avatarPreview || undefined);
+
         setSaving(false);
-        toast.success("Profile saved successfully!");
+
+        if (result.success) {
+            toast.success("Profile saved successfully!");
+        } else if (result.error === "NOT_AUTHENTICATED") {
+            toast.error("Please log in to update your profile");
+        } else {
+            toast.error("Failed to save profile. Please try again.");
+        }
     };
 
     const handleExport = () => {
