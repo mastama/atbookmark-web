@@ -6,6 +6,7 @@ import { Search, Command, Link2, ArrowRight, Sparkles } from "lucide-react";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import type { User } from "@supabase/supabase-js";
 
 interface HomeHeaderProps {
     onSearchClick?: () => void;
@@ -18,8 +19,8 @@ const getGreeting = (): string => {
     return "Good evening";
 };
 
-const getDisplayName = (user: { name: string; email: string; avatar: string } | null): string => {
-    return user?.name || user?.email?.split("@")[0] || "User";
+const getDisplayName = (user: User | null): string => {
+    return user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
 };
 
 const isValidUrl = (string: string): boolean => {

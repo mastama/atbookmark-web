@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, ChevronDown, Sparkles, Shield, Flame } from "lucide-react";
 import { ProModal } from "@/components/modals/ProModal";
+import { createClient } from "@/lib/supabase/client";
 
 const freePlanFeatures = [
     "Save up to 100 Bookmarks",
@@ -87,14 +88,19 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
     );
 }
 
-interface PricingProps {
-    isLoggedIn?: boolean;
-}
-
-export function Pricing({ isLoggedIn = false }: PricingProps) {
+export function Pricing() {
     const router = useRouter();
     const [isAnnual, setIsAnnual] = useState(false);
     const [isProModalOpen, setIsProModalOpen] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+    // Check auth status with Supabase
+    useEffect(() => {
+        const supabase = createClient();
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            setIsLoggedIn(!!user);
+        });
+    }, []);
 
     const monthlyPrice = "Rp 29rb";
     const annualPrice = "Rp 290rb";

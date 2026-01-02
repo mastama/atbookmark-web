@@ -117,8 +117,8 @@ export function Header({ onMenuClick }: HeaderProps) {
                             className="flex items-center gap-2 rounded-xl border-2 border-border p-1.5 pr-3 hover:bg-gray-50 dark:hover:bg-muted shadow-brutal-sm"
                         >
                             <div className="h-8 w-8 overflow-hidden rounded-lg border border-border bg-accent-lavender">
-                                {user?.avatar ? (
-                                    <img src={user.avatar} alt={user.name} className="h-full w-full object-cover" />
+                                {user?.user_metadata?.avatar_url ? (
+                                    <img src={user.user_metadata.avatar_url} alt={user.user_metadata?.full_name || user.email || "User"} className="h-full w-full object-cover" />
                                 ) : (
                                     <User className="h-full w-full p-1 text-foreground/50" />
                                 )}
@@ -140,7 +140,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                                 >
                                     {/* User Info */}
                                     <div className="mb-2 border-b border-border/50 px-3 py-2">
-                                        <p className="font-display font-bold">{user?.name}</p>
+                                        <p className="font-display font-bold">{user?.user_metadata?.full_name || user?.email?.split('@')[0]}</p>
                                         <p className="text-xs text-foreground/50">{user?.email}</p>
                                     </div>
 

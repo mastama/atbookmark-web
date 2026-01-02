@@ -1,20 +1,38 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Menu, X, ArrowRight } from "lucide-react";
+import { Menu, X, ArrowRight, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 export function Navbar() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [user, setUser] = useState<SupabaseUser | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Check auth status on mount (client-side only)
+    // Check auth status with Supabase
     useEffect(() => {
-        const session = localStorage.getItem("atbookmark_session");
-        setIsAuthenticated(session === "authenticated");
+        const supabase = createClient();
+
+        // Get initial user
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            setUser(user);
+            setIsLoading(false);
+        });
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+            setIsLoading(false);
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
+
+    const isAuthenticated = !!user;
 
     return (
         <header className="sticky top-0 z-50 w-full border-b-2 border-border bg-background/95 backdrop-blur-sm">
@@ -40,13 +58,23 @@ export function Navbar() {
 
                 {/* Right Actions - Smart Auth */}
                 <div className="hidden items-center gap-4 md:flex">
-                    {isAuthenticated ? (
-                        <Link href="/dashboard">
-                            <Button size="sm">
-                                Go to Dashboard
-                                <ArrowRight className="ml-2 h-4 w-4" />
-                            </Button>
-                        </Link>
+                    {isLoading ? (
+                        <div className="h-8 w-20 animate-pulse rounded-lg bg-muted" />
+                    ) : isAuthenticated ? (
+                        <div className="flex items-center gap-3">
+                            <Link href="/dashboard">
+                                <Button size="sm" variant="outline">
+                                    <User className="mr-2 h-4 w-4" />
+                                    Dashboard
+                                </Button>
+                            </Link>
+                            <Link href="/dashboard">
+                                <Button size="sm">
+                                    Go to App
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </Button>
+                            </Link>
+                        </div>
                     ) : (
                         <>
                             <Link href="/login" className="text-sm font-medium hover:text-primary transition-colors">
@@ -82,7 +110,9 @@ export function Navbar() {
                             <Link href="#pricing" className="text-sm font-medium">Pricing</Link>
                             <Link href="#manifesto" className="text-sm font-medium">Manifesto</Link>
                             <hr className="border-border" />
-                            {isAuthenticated ? (
+                            {isLoading ? (
+                                <div className="h-10 w-full animate-pulse rounded-lg bg-muted" />
+                            ) : isAuthenticated ? (
                                 <Link href="/dashboard">
                                     <Button size="sm" className="w-full">
                                         Go to Dashboard
