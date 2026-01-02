@@ -15,23 +15,24 @@ type BillingCycle = "monthly" | "yearly";
 
 const pricing = {
     monthly: {
-        price: 49000,
+        price: 29000,
         label: "Bulanan",
-        formatted: "Rp 49.000",
+        formatted: "Rp 29.000",
     },
     yearly: {
-        price: 490000,
+        price: 290000,
         label: "Tahunan",
-        formatted: "Rp 490.000",
-        savings: "Hemat 2 Bulan!",
+        formatted: "Rp 290.000",
+        savings: "Hemat 17%",
     },
 };
 
 const benefits = [
     "📚 Unlimited Bookmark & Folder",
     "🤖 AI Auto-Tagging & Ringkasan",
-    "☁️ Forever Cloud Archive",
-    "🔒 Private & Encrypted",
+    "📁 Nested Folders",
+    "🎨 Custom Colors",
+    "🌙 Dark Mode",
     "💬 Priority Support via WhatsApp",
 ];
 
@@ -41,7 +42,7 @@ const BANK_ACCOUNT = {
     name: "SINGGIH PRATAMA",
 };
 
-const WHATSAPP_NUMBER = "6281234567890"; // Replace with actual number
+const WHATSAPP_NUMBER = "62811194596"; // Replace with actual number
 
 export function ProModal({ isOpen, onClose }: ProModalProps) {
     const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
@@ -102,7 +103,7 @@ export function ProModal({ isOpen, onClose }: ProModalProps) {
                                     <Sparkles className="h-7 w-7 text-amber-600" />
                                 </div>
                                 <h2 className="font-display text-2xl font-bold">
-                                    Unlock Second Brain 🧠
+                                    Upgrade ke Pro ⚡️
                                 </h2>
                                 <p className="mt-2 text-sm text-foreground/60">
                                     Akses penuh tanpa batas. Tanpa ribet.
@@ -114,8 +115,8 @@ export function ProModal({ isOpen, onClose }: ProModalProps) {
                                 <button
                                     onClick={() => setBillingCycle("monthly")}
                                     className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all ${billingCycle === "monthly"
-                                            ? "bg-surface border-2 border-border shadow-brutal-sm"
-                                            : "text-foreground/60 hover:text-foreground"
+                                        ? "bg-surface border-2 border-border shadow-brutal-sm"
+                                        : "text-foreground/60 hover:text-foreground"
                                         }`}
                                 >
                                     Bulanan
@@ -123,8 +124,8 @@ export function ProModal({ isOpen, onClose }: ProModalProps) {
                                 <button
                                     onClick={() => setBillingCycle("yearly")}
                                     className={`relative flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all ${billingCycle === "yearly"
-                                            ? "bg-surface border-2 border-border shadow-brutal-sm"
-                                            : "text-foreground/60 hover:text-foreground"
+                                        ? "bg-surface border-2 border-border shadow-brutal-sm"
+                                        : "text-foreground/60 hover:text-foreground"
                                         }`}
                                 >
                                     Tahunan
@@ -190,19 +191,21 @@ export function ProModal({ isOpen, onClose }: ProModalProps) {
                             </div>
 
                             {/* Bank Transfer Section */}
-                            <div className="mb-6 rounded-xl border-2 border-border bg-white p-4">
-                                <p className="text-xs font-bold uppercase tracking-wider text-foreground/50 mb-3">
+                            <div className="mb-6 rounded-xl border-2 border-border bg-white p-4 text-slate-900">
+                                {/* Menggunakan text-slate-500 (abu-abu statis) agar tetap terbaca di atas bg-white */}
+                                <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
                                     Atau Transfer Manual
                                 </p>
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-xs text-foreground/60">
+                                        <p className="text-xs text-slate-600">
                                             Bank {BANK_ACCOUNT.bank}
                                         </p>
-                                        <p className="font-mono text-lg font-bold">
+                                        {/* Memaksa warna hitam/gelap statis */}
+                                        <p className="font-mono text-lg font-bold text-slate-900">
                                             {BANK_ACCOUNT.number}
                                         </p>
-                                        <p className="text-xs text-foreground/60">
+                                        <p className="text-xs text-slate-600">
                                             a.n. {BANK_ACCOUNT.name}
                                         </p>
                                     </div>
@@ -210,7 +213,8 @@ export function ProModal({ isOpen, onClose }: ProModalProps) {
                                         variant="outline"
                                         size="sm"
                                         onClick={handleCopyAccount}
-                                        className="shrink-0"
+                                        // Pastikan tombol juga memiliki warna teks yang kontras
+                                        className="shrink-0 border-slate-200 text-slate-900 hover:bg-slate-100"
                                     >
                                         <Copy className="h-4 w-4 mr-1" />
                                         Salin
