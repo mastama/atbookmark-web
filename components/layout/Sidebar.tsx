@@ -26,6 +26,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useOrganization, Folder as FolderType } from "@/hooks/useOrganization";
 import { useBookmarks } from "@/hooks/useBookmarks";
+import { useSyncSidebarData } from "@/hooks/useSyncSidebarData";
 import { CreateFolderModal } from "@/components/modals/CreateFolderModal";
 import { CreateTagModal } from "@/components/modals/CreateTagModal";
 import { ProModal } from "@/components/modals/ProModal";
@@ -221,6 +222,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     } = useOrganization();
     const { getBookmarkCount } = useBookmarks();
 
+    // Sync sidebar data from Supabase on mount
+    const { isLoading: isSyncingData } = useSyncSidebarData();
+
     // Modal states
     const [createFolderOpen, setCreateFolderOpen] = useState(false);
     const [createTagOpen, setCreateTagOpen] = useState(false);
@@ -229,11 +233,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     // Drag state
     const [draggedFolder, setDraggedFolder] = useState<FolderType | null>(null);
 
-    const inboxFolder = folders.find((f) => f.id === "inbox");
-    const inboxCount = getBookmarkCount("inbox");
+    // Find the actual Inbox folder and get its bookmark count using the real UUID
+    const inboxFolder = folders.find(f => f.name === "Inbox" && f.type === "system");
+    const inboxCount = inboxFolder ? getBookmarkCount(inboxFolder.id) : 0;
     const customFolders = folders.filter((f) => f.type === "custom");
 
-    const pinnedRootFolders = getPinnedRootFolders().filter((f) => f.id !== "inbox");
+    // Filter out inbox from pinned folders (it has its own display section)
+    const pinnedRootFolders = getPinnedRootFolders().filter((f) => f.type !== "system");
     const visibleFolders = isPro
         ? pinnedRootFolders
         : pinnedRootFolders.slice(0, FREE_FOLDER_LIMIT);
@@ -351,28 +357,26 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </div>
 
                 <nav className="flex-1 overflow-y-auto p-4">
-                    {/* Inbox */}
-                    {inboxFolder && (
-                        <div className="mb-4">
-                            <Link
-                                href="/dashboard/folder/inbox"
-                                className={cn(
-                                    "group flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition-all",
-                                    pathname === "/dashboard/folder/inbox"
-                                        ? "bg-primary/10 text-primary"
-                                        : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
-                                )}
-                            >
-                                <Inbox className="h-5 w-5" />
-                                <span className="flex-1">Inbox</span>
-                                {inboxCount > 0 && (
-                                    <span className="text-[10px] text-gray-400">
-                                        {inboxCount}
-                                    </span>
-                                )}
-                            </Link>
-                        </div>
-                    )}
+                    {/* Inbox - Always visible */}
+                    <div className="mb-4">
+                        <Link
+                            href="/dashboard/folder/inbox"
+                            className={cn(
+                                "group flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition-all",
+                                pathname === "/dashboard/folder/inbox"
+                                    ? "bg-primary/10 text-primary"
+                                    : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+                            )}
+                        >
+                            <Inbox className="h-5 w-5" />
+                            <span className="flex-1">Inbox</span>
+                            {inboxCount > 0 && (
+                                <span className="text-[10px] text-gray-400">
+                                    {inboxCount}
+                                </span>
+                            )}
+                        </Link>
+                    </div>
 
                     {/* Nav Groups (Updated with Logic) */}
                     {navGroups.map((group) => (
@@ -561,17 +565,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                             </Link>
                         </li>
                     </ul>
-
-                    {/* Dev Toggle */}
-                    <button
-                        onClick={() => {
-                            useOrganization.getState().setIsPro(!isPro);
-                            toast.success(isPro ? "Switched to Free Plan" : "Switched to Pro Plan ✨");
-                        }}
-                        className="mt-4 w-full text-center text-xs text-gray-300 hover:text-gray-500 transition-colors"
-                    >
-                        [Dev: Toggle Pro]
-                    </button>
                 </div>
             </aside>
 

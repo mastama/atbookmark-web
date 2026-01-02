@@ -27,12 +27,18 @@ const colorClasses: Record<FolderColor, string> = {
 export default function FolderDetailPage() {
     const params = useParams();
     const folderId = params.id as string;
-    const { getFolderById, getChildFolders } = useOrganization();
+    const { getFolderById, folders, getChildFolders } = useOrganization();
     const { getBookmarksByFolder } = useBookmarks();
     const [addModalOpen, setAddModalOpen] = useState(false);
 
-    const folder = getFolderById(folderId);
-    const folderBookmarks = getBookmarksByFolder(folderId);
+    // Handle "inbox" as a special slug - look up by name for system Inbox folder
+    const folder = folderId === "inbox"
+        ? folders.find(f => f.name === "Inbox" && f.type === "system")
+        : getFolderById(folderId);
+
+    // Get bookmarks using the actual folder ID (for inbox, use the found folder's ID)
+    const actualFolderId = folder?.id || folderId;
+    const folderBookmarks = getBookmarksByFolder(actualFolderId);
     const subFolders = folder ? getChildFolders(folder.id) : [];
 
     const {
