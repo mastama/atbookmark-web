@@ -65,11 +65,14 @@ interface BookmarksState {
     updateReadStatus: (ids: string[], isRead: boolean) => void;
 
     // Archive Actions
-    archiveBookmarks: (ids: string[]) => void;
+    archiveBookmarks: (ids: string[], isPro?: boolean) => { success: boolean; error?: string };
     restoreBookmarks: (ids: string[]) => void;
     getArchivedBookmarks: () => Bookmark[];
     getActiveBookmarks: () => Bookmark[];
     getArchivedCount: () => number;
+
+    // Limit Checks
+    canAddBookmark: (isPro: boolean) => { allowed: boolean; error?: string };
 }
 
 // --- Helpers ---
@@ -133,13 +136,7 @@ export const useBookmarks = create<BookmarksState>()(
                 const state = get();
                 const activeBookmarks = state.bookmarks.filter(b => !b.isTrashed && !b.archived);
 
-                // Check bookmark limit for Free users (100 max)
-                // Note: In production, isPro would come from user context
-                const FREE_BOOKMARK_LIMIT = 100;
-                if (activeBookmarks.length >= FREE_BOOKMARK_LIMIT) {
-                    // Limit reached - in a real app, this would return error
-                    console.warn("Bookmark limit reached for Free plan");
-                }
+                // Note: Limit checks should be done via canAddBookmark before calling this method
 
                 const id = `bm_${Date.now()}`;
                 const domain = extractDomain(data.url);
@@ -324,12 +321,22 @@ export const useBookmarks = create<BookmarksState>()(
             },
 
             // Archive Actions
-            archiveBookmarks: (ids: string[]) => {
-                set((state) => ({
+            archiveBookmarks: (ids: string[], isPro: boolean = false) => {
+                const state = get();
+                const FREE_ARCHIVE_LIMIT = 5;
+                const currentArchived = state.bookmarks.filter(b => b.archived && !b.isTrashed).length;
+                const newArchiveCount = currentArchived + ids.length;
+
+                if (!isPro && newArchiveCount > FREE_ARCHIVE_LIMIT) {
+                    return { success: false, error: "ARCHIVE_LIMIT_REACHED" };
+                }
+
+                set({
                     bookmarks: state.bookmarks.map((b) =>
                         ids.includes(b.id) ? { ...b, archived: true } : b
                     ),
-                }));
+                });
+                return { success: true };
             },
 
             restoreBookmarks: (ids: string[]) => {
@@ -350,6 +357,18 @@ export const useBookmarks = create<BookmarksState>()(
 
             getArchivedCount: () => {
                 return get().bookmarks.filter((b) => b.archived && !b.isTrashed).length;
+            },
+
+            // Limit Checks
+            canAddBookmark: (isPro: boolean) => {
+                const FREE_BOOKMARK_LIMIT = 100;
+                const state = get();
+                const activeBookmarks = state.bookmarks.filter(b => !b.isTrashed && !b.archived);
+
+                if (!isPro && activeBookmarks.length >= FREE_BOOKMARK_LIMIT) {
+                    return { allowed: false, error: "BOOKMARK_LIMIT_REACHED" };
+                }
+                return { allowed: true };
             },
         }),
         {
