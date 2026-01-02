@@ -14,7 +14,6 @@ export interface Folder {
     count: number;
     isPinned: boolean;
     parentId: string | null;
-    index: number;
 }
 
 export interface Tag {
@@ -74,15 +73,9 @@ const generateId = () => `id_${Date.now()}_${Math.random().toString(36).substr(2
 export const useOrganization = create<OrganizationState>()(
     persist(
         (set, get) => ({
-            folders: [
-                { id: "inbox", name: "Inbox", type: "system", color: "gray", count: 0, isPinned: true, parentId: null, index: 0 },
-                { id: "work", name: "Work", type: "custom", color: "sky", count: 0, isPinned: true, parentId: null, index: 1 },
-                { id: "personal", name: "Personal", type: "custom", color: "lavender", count: 0, isPinned: true, parentId: null, index: 2 },
-            ],
-            tags: [
-                { id: "react", name: "#React", color: "mint", isPinned: true },
-                { id: "design", name: "#Design", color: "coral", isPinned: true },
-            ],
+            // Start with empty data - will be populated from server
+            folders: [],
+            tags: [],
             isPro: false,
 
             getSortedFolders: () => {
@@ -92,7 +85,6 @@ export const useOrganization = create<OrganizationState>()(
                     if (!a.isPinned && b.isPinned) return 1;
                     if (a.type === "system" && b.type !== "system") return -1;
                     if (a.type !== "system" && b.type === "system") return 1;
-                    if (a.index !== b.index) return a.index - b.index;
                     return a.name.localeCompare(b.name);
                 });
             },
@@ -149,7 +141,6 @@ export const useOrganization = create<OrganizationState>()(
                     count: 0,
                     isPinned: false,
                     parentId: parentId ?? null,
-                    index: state.folders.length,
                 };
 
                 set({ folders: [...state.folders, newFolder] });

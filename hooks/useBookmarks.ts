@@ -102,28 +102,8 @@ const normalizeTag = (tag: string): string => {
 };
 
 // --- Initial Data ---
-// Data dummy disesuaikan dengan struktur baru (lowercase tags)
-const initialBookmarks: Bookmark[] = [
-    {
-        id: "bm_1",
-        title: "The Future of AI: What to Expect in 2025",
-        url: "https://techcrunch.com/ai-2025",
-        domain: "techcrunch.com",
-        coverImage: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=300&fit=crop",
-        tags: [
-            { id: "ai", label: "#ai", color: "bg-accent-lavender" },
-            { id: "tech", label: "#tech", color: "bg-accent-sky" },
-        ],
-        folderId: "inbox",
-        savedAt: "2 hours ago",
-        readingTime: "5 min read",
-        isFavorite: true,
-        isTrashed: false,
-        isRead: false,
-        archived: false,
-        createdAt: Date.now() - 7200000,
-    },
-];
+// Start with empty data - will be populated from server
+const initialBookmarks: Bookmark[] = [];
 
 // --- Store ---
 
