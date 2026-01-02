@@ -360,7 +360,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                     "group flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition-all",
                                     pathname === "/dashboard/folder/inbox"
                                         ? "bg-primary/10 text-primary"
-                                        : "hover:bg-gray-100"
+                                        : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                                 )}
                             >
                                 <Inbox className="h-5 w-5" />
@@ -377,7 +377,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     {/* Nav Groups (Updated with Logic) */}
                     {navGroups.map((group) => (
                         <div key={group.label} className="mb-6">
-                            <h3 className="mb-2 px-3 text-xs font-bold uppercase tracking-wider text-gray-400">
+                            <h3 className="mb-2 px-3 text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                                 {group.label}
                             </h3>
                             <ul className="space-y-1">
@@ -395,7 +395,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                                     "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all group",
                                                     isActive
                                                         ? "bg-primary/10 font-medium text-primary"
-                                                        : "text-gray-600 hover:bg-gray-100",
+                                                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-gray-200",
                                                     isLocked && "opacity-75 hover:opacity-100"
                                                 )}
                                             >
@@ -554,7 +554,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         <li>
                             <Link
                                 href="/dashboard/settings"
-                                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200"
                             >
                                 <Settings className="h-5 w-5" />
                                 Settings
