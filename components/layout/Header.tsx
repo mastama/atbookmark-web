@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { useOrganization } from "@/hooks/useOrganization";
 import { Button } from "@/components/ui/button";
 import { AddBookmarkModal } from "@/components/modals/AddBookmarkModal";
 import { ProModal } from "@/components/modals/ProModal";
@@ -24,6 +25,7 @@ interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
     const { user, logout } = useAuth();
+    const { isPro } = useOrganization();
     const [profileOpen, setProfileOpen] = useState(false);
     const [addModalOpen, setAddModalOpen] = useState(false);
     const [proModalOpen, setProModalOpen] = useState(false);
@@ -47,6 +49,10 @@ export function Header({ onMenuClick }: HeaderProps) {
     const handleBilling = () => {
         setProfileOpen(false);
         setProModalOpen(true);
+    };
+
+    const openCommandMenu = () => {
+        window.dispatchEvent(new CustomEvent("openCommandMenu"));
     };
 
     return (
@@ -74,14 +80,15 @@ export function Header({ onMenuClick }: HeaderProps) {
 
                 {/* Center: Search */}
                 <div className="hidden flex-1 justify-center md:flex">
-                    <div className="relative w-full max-w-md">
+                    <button
+                        onClick={openCommandMenu}
+                        className="relative w-full max-w-md text-left"
+                    >
                         <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/40" />
-                        <input
-                            type="text"
-                            placeholder="Search your second brain... (Cmd+K)"
-                            className="h-10 w-full rounded-xl border-2 border-border bg-surface pl-10 pr-4 text-sm font-medium placeholder:text-foreground/40 focus:border-primary focus:outline-none focus:shadow-brutal-sm"
-                        />
-                    </div>
+                        <div className="h-10 w-full rounded-xl border-2 border-border bg-surface pl-10 pr-4 text-sm font-medium text-foreground/40 flex items-center hover:border-primary hover:shadow-brutal-sm transition-all cursor-pointer">
+                            Search your second brain... (Cmd+K)
+                        </div>
+                    </button>
                 </div>
 
                 {/* Right: Actions */}
@@ -156,9 +163,17 @@ export function Header({ onMenuClick }: HeaderProps) {
                                             >
                                                 <CreditCard className="h-4 w-4" />
                                                 Billing
-                                                <span className="ml-auto rounded-full bg-secondary px-1.5 py-0.5 text-xs font-bold">
-                                                    Pro
-                                                </span>
+
+                                                {/* LOGIC UPDATE: Ternary Operator */}
+                                                {isPro ? (
+                                                    <span className="ml-auto rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">
+                                                        Pro
+                                                    </span>
+                                                ) : (
+                                                    <span className="ml-auto rounded-full bg-gray-200 px-2 py-0.5 text-xs font-bold text-gray-600">
+                                                        Free
+                                                    </span>
+                                                )}
                                             </button>
                                         </li>
                                         <li className="border-t border-border/50 pt-1">
