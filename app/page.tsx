@@ -4,6 +4,7 @@ import { PainPoints } from "@/components/landing/PainPoints";
 import { Features } from "@/components/landing/Features";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { SocialProof } from "@/components/landing/SocialProof";
+import { Pricing } from "@/components/landing/Pricing";
 import { CTA } from "@/components/landing/CTA";
 import { Footer } from "@/components/landing/Footer";
 
@@ -16,6 +17,7 @@ export default function Home() {
       <Features />
       <HowItWorks />
       <SocialProof />
+      <Pricing />
       <CTA />
       <Footer />
     </main>
