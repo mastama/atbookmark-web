@@ -10,42 +10,73 @@ import { AuthLayout } from "@/components/auth/AuthLayout";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (password !== confirmPassword) {
+            toast.error("Passwords do not match");
+            return;
+        }
+
+        if (password.length < 6) {
+            toast.error("Password must be at least 6 characters");
+            return;
+        }
+
         setIsLoading(true);
 
-        // Mock loading delay
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        try {
+            const supabase = createClient();
+            const { error } = await supabase.auth.signUp({
+                email,
+                password,
+            });
 
-        // Set mock session
-        localStorage.setItem("atbookmark_session", "authenticated");
+            if (error) {
+                toast.error(error.message);
+                setIsLoading(false);
+                return;
+            }
 
-        toast.success("Account created! Redirecting... ✨");
-
-        setTimeout(() => {
+            toast.success("Account created! Redirecting... ✨");
             router.push("/dashboard");
-        }, 500);
+            router.refresh();
+        } catch {
+            toast.error("An unexpected error occurred");
+            setIsLoading(false);
+        }
     };
 
     const handleGoogleLogin = async () => {
         setIsGoogleLoading(true);
 
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        try {
+            const supabase = createClient();
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: "google",
+                options: {
+                    redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+                },
+            });
 
-        // Set mock session
-        localStorage.setItem("atbookmark_session", "authenticated");
-
-        toast.success("Connected with Google! Redirecting... ✨");
-
-        setTimeout(() => {
-            router.push("/dashboard");
-        }, 500);
+            if (error) {
+                toast.error(error.message);
+                setIsGoogleLoading(false);
+            }
+        } catch {
+            toast.error("Failed to connect with Google");
+            setIsGoogleLoading(false);
+        }
     };
 
     return (
@@ -98,6 +129,8 @@ export default function RegisterPage() {
                         icon={<Mail className="h-5 w-5" />}
                         required
                         disabled={isLoading || isGoogleLoading}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                     />
 
                     <Input
@@ -106,6 +139,8 @@ export default function RegisterPage() {
                         icon={<Lock className="h-5 w-5" />}
                         required
                         disabled={isLoading || isGoogleLoading}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                     />
 
                     <Input
@@ -114,6 +149,8 @@ export default function RegisterPage() {
                         icon={<Lock className="h-5 w-5" />}
                         required
                         disabled={isLoading || isGoogleLoading}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
                     />
                 </motion.div>
 

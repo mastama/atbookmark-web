@@ -11,12 +11,15 @@ import { AuthLayout } from "@/components/auth/AuthLayout";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
 
     // Get returnUrl from query params, default to /dashboard
     const returnUrl = searchParams.get("returnUrl") || "/dashboard";
@@ -25,32 +28,48 @@ export default function LoginPage() {
         e.preventDefault();
         setIsLoading(true);
 
-        // Mock loading delay
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        try {
+            const supabase = createClient();
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-        // Set mock session
-        localStorage.setItem("atbookmark_session", "authenticated");
+            if (error) {
+                toast.error(error.message);
+                setIsLoading(false);
+                return;
+            }
 
-        toast.success("Welcome back! Redirecting... 🌊");
-
-        setTimeout(() => {
+            toast.success("Welcome back! Redirecting... 🌊");
             router.push(returnUrl);
-        }, 500);
+            router.refresh();
+        } catch {
+            toast.error("An unexpected error occurred");
+            setIsLoading(false);
+        }
     };
 
     const handleGoogleLogin = async () => {
         setIsGoogleLoading(true);
 
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        try {
+            const supabase = createClient();
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: "google",
+                options: {
+                    redirectTo: `${window.location.origin}/auth/callback?next=${returnUrl}`,
+                },
+            });
 
-        // Set mock session
-        localStorage.setItem("atbookmark_session", "authenticated");
-
-        toast.success("Connected with Google! Redirecting... 🌊");
-
-        setTimeout(() => {
-            router.push(returnUrl);
-        }, 500);
+            if (error) {
+                toast.error(error.message);
+                setIsGoogleLoading(false);
+            }
+        } catch {
+            toast.error("Failed to connect with Google");
+            setIsGoogleLoading(false);
+        }
     };
 
     return (
@@ -103,6 +122,8 @@ export default function LoginPage() {
                         icon={<Mail className="h-5 w-5" />}
                         required
                         disabled={isLoading || isGoogleLoading}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                     />
 
                     <Input
@@ -111,6 +132,8 @@ export default function LoginPage() {
                         icon={<Lock className="h-5 w-5" />}
                         required
                         disabled={isLoading || isGoogleLoading}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                     />
                 </motion.div>
 
