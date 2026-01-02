@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useOrganization, FolderColor } from "@/hooks/useOrganization";
+import { createFolder as createFolderAction } from "@/actions/sidebar";
 import { cn } from "@/lib/utils";
 
 interface CreateFolderModalProps {
@@ -48,7 +49,7 @@ const proColors: { value: string; className: string }[] = [
 ];
 
 export function CreateFolderModal({ isOpen, onClose }: CreateFolderModalProps) {
-    const { addFolder, isPro, folders } = useOrganization();
+    const { isPro, folders } = useOrganization();
     const [name, setName] = useState("");
     const [color, setColor] = useState<FolderColor>("mint");
     const [parentId, setParentId] = useState<string>("");
@@ -64,13 +65,30 @@ export function CreateFolderModal({ isOpen, onClose }: CreateFolderModalProps) {
         }
 
         setSaving(true);
-        await new Promise((r) => setTimeout(r, 500));
 
-        const result = addFolder(name, isPro ? color : undefined, parentId || null);
+        // Call server action to persist to database
+        const result = await createFolderAction(
+            name,
+            isPro ? color : "gray",
+            parentId || null
+        );
 
         setSaving(false);
 
-        if (result.success) {
+        if (result.success && result.folder) {
+            // Update local Zustand store for immediate UI feedback
+            useOrganization.setState((state) => ({
+                folders: [...state.folders, {
+                    id: result.folder!.id,
+                    name: result.folder!.name,
+                    type: result.folder!.type,
+                    color: result.folder!.color,
+                    count: 0,
+                    isPinned: false, // Default to false since column doesn't exist
+                    parentId: result.folder!.parent_id,
+                }],
+            }));
+
             toast.success(`Folder "${name}" created! 📁`);
             setName("");
             setColor("mint");
@@ -78,6 +96,10 @@ export function CreateFolderModal({ isOpen, onClose }: CreateFolderModalProps) {
             onClose();
         } else if (result.error === "NAME_EXISTS") {
             toast.error("A folder with this name already exists");
+        } else if (result.error === "NOT_AUTHENTICATED") {
+            toast.error("Please log in to create folders");
+        } else {
+            toast.error("Failed to create folder. Please try again.");
         }
     };
 

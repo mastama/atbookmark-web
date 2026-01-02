@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useOrganization } from "@/hooks/useOrganization";
+import { createTag as createTagAction } from "@/actions/sidebar";
 
 interface CreateTagModalProps {
     isOpen: boolean;
@@ -14,7 +15,6 @@ interface CreateTagModalProps {
 }
 
 export function CreateTagModal({ isOpen, onClose }: CreateTagModalProps) {
-    const { addTag } = useOrganization();
     const [name, setName] = useState("");
     const [saving, setSaving] = useState(false);
 
@@ -25,19 +25,33 @@ export function CreateTagModal({ isOpen, onClose }: CreateTagModalProps) {
         }
 
         setSaving(true);
-        await new Promise((r) => setTimeout(r, 500));
 
-        const result = addTag(name);
+        // Call server action to persist to database
+        const result = await createTagAction(name, "gray");
 
         setSaving(false);
 
-        if (result.success) {
+        if (result.success && result.tag) {
+            // Update local Zustand store for immediate UI feedback
+            useOrganization.setState((state) => ({
+                tags: [...state.tags, {
+                    id: result.tag!.id,
+                    name: result.tag!.name,
+                    color: result.tag!.color,
+                    isPinned: false, // Default to false since column doesn't exist
+                }],
+            }));
+
             const tagName = name.startsWith("#") ? name : `#${name}`;
             toast.success(`Tag "${tagName}" created! 🏷️`);
             setName("");
             onClose();
         } else if (result.error === "NAME_EXISTS") {
             toast.error("This tag already exists");
+        } else if (result.error === "NOT_AUTHENTICATED") {
+            toast.error("Please log in to create tags");
+        } else {
+            toast.error("Failed to create tag. Please try again.");
         }
     };
 
