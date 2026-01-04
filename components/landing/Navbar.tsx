@@ -31,7 +31,7 @@ export function Navbar() {
                         Features
                     </Link>
                     <Link href="#pricing" className="text-sm font-medium hover:text-primary transition-colors">
-                        Pricing
+                        Support
                     </Link>
                     <Link href="#manifesto" className="text-sm font-medium hover:text-primary transition-colors">
                         Manifesto
@@ -79,7 +79,7 @@ export function Navbar() {
                     >
                         <nav className="flex flex-col gap-4 p-4">
                             <Link href="#features" className="text-sm font-medium">Features</Link>
-                            <Link href="#pricing" className="text-sm font-medium">Pricing</Link>
+                            <Link href="#pricing" className="text-sm font-medium">Support</Link>
                             <Link href="#manifesto" className="text-sm font-medium">Manifesto</Link>
                             <hr className="border-border" />
                             {isAuthenticated ? (

@@ -162,7 +162,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                                                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-accent-lavender/30"
                                             >
                                                 <CreditCard className="h-4 w-4" />
-                                                Billing
+                                                Trakteer
 
                                                 {/* LOGIC UPDATE: Ternary Operator */}
                                                 {isPro ? (

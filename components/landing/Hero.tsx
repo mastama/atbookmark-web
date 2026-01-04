@@ -46,7 +46,6 @@ export function Hero() {
                                 </Button>
                             </Link>
                         )}
-                        <InstallExtensionButton />
                         <Button size="lg" variant="outline">
                             <Play className="mr-2 h-5 w-5" />
                             View the Demo
