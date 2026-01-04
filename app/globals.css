@@ -226,3 +226,14 @@ h6 {
     @apply bg-background text-foreground;
   }
 }
+
+/* Text Selection Colors */
+::selection {
+  background-color: #C7D2FE; /* Light indigo for light mode */
+  color: #1F2937;
+}
+
+.dark ::selection {
+  background-color: #4338CA; /* Dark indigo for dark mode - soft and readable */
+  color: #F9FAFB;
+}
