@@ -14,47 +14,55 @@ interface CreateFolderModalProps {
     onClose: () => void;
 }
 
-// Basic colors for free users
-const basicColors: { value: FolderColor; className: string }[] = [
-    { value: "mint", className: "bg-green-300" },
-    { value: "lavender", className: "bg-purple-300" },
-    { value: "coral", className: "bg-rose-300" },
-    { value: "sky", className: "bg-sky-300" },
-    { value: "yellow", className: "bg-amber-300" },
-];
-
-// Extended colors for Pro users (4x5 grid)
-const proColors: { value: string; className: string }[] = [
+// Extended colors list (25 colors for 5x5 grid)
+const allColors: { value: string; className: string }[] = [
+    // Grayscale
+    { value: "slate", className: "bg-slate-400" },
+    { value: "zinc", className: "bg-zinc-400" },
+    { value: "neutral", className: "bg-neutral-400" },
+    { value: "stone", className: "bg-stone-400" },
     { value: "red", className: "bg-red-400" },
+
+    // Warm
     { value: "orange", className: "bg-orange-400" },
     { value: "amber", className: "bg-amber-400" },
     { value: "yellow", className: "bg-yellow-400" },
     { value: "lime", className: "bg-lime-400" },
     { value: "green", className: "bg-green-400" },
+
+    // Cool / Nature
     { value: "emerald", className: "bg-emerald-400" },
     { value: "teal", className: "bg-teal-400" },
     { value: "cyan", className: "bg-cyan-400" },
     { value: "sky", className: "bg-sky-400" },
     { value: "blue", className: "bg-blue-400" },
+
+    // Purple / Pink
     { value: "indigo", className: "bg-indigo-400" },
     { value: "violet", className: "bg-violet-400" },
     { value: "purple", className: "bg-purple-400" },
     { value: "fuchsia", className: "bg-fuchsia-400" },
     { value: "pink", className: "bg-pink-400" },
+
+    // Pastel / Soft
     { value: "rose", className: "bg-rose-400" },
-    { value: "slate", className: "bg-slate-400" },
-    { value: "gray", className: "bg-gray-400" },
-    { value: "neutral", className: "bg-neutral-400" },
+    { value: "mint", className: "bg-green-300" },
+    { value: "lavender", className: "bg-purple-300" },
+    { value: "coral", className: "bg-rose-300" },
+    { value: "sky-soft", className: "bg-sky-300" },
 ];
 
 export function CreateFolderModal({ isOpen, onClose }: CreateFolderModalProps) {
-    const { addFolder, isPro, folders } = useOrganization();
+    // Removed isPro from hook
+    const { addFolder, folders } = useOrganization();
+
     const [name, setName] = useState("");
-    const [color, setColor] = useState<FolderColor>("mint");
+    // Default color set to 'slate' or you can pick another default
+    const [color, setColor] = useState<string>("slate");
     const [parentId, setParentId] = useState<string>("");
     const [saving, setSaving] = useState(false);
 
-    // Get available parent folders (only custom folders, no nested nesting for simplicity)
+    // Get available parent folders
     const parentOptions = folders.filter((f) => f.type === "custom" && !f.parentId);
 
     const handleCreate = async () => {
@@ -64,16 +72,18 @@ export function CreateFolderModal({ isOpen, onClose }: CreateFolderModalProps) {
         }
 
         setSaving(true);
+        // Simulate network delay for UX
         await new Promise((r) => setTimeout(r, 500));
 
-        const result = addFolder(name, isPro ? color : undefined, parentId || null);
+        // Always pass the selected color now
+        const result = addFolder(name, color as FolderColor, parentId || null);
 
         setSaving(false);
 
         if (result.success) {
             toast.success(`Folder "${name}" created! 📁`);
             setName("");
-            setColor("mint");
+            setColor("slate"); // Reset to default
             setParentId("");
             onClose();
         } else if (result.error === "NAME_EXISTS") {
@@ -146,53 +156,33 @@ export function CreateFolderModal({ isOpen, onClose }: CreateFolderModalProps) {
                                     </div>
                                 )}
 
-                                {/* Color Picker */}
+                                {/* Color Picker - Unlocked for everyone */}
                                 <div>
                                     <label className="mb-2 block text-sm font-medium">
-                                        Color
-                                        {!isPro && (
-                                            <span className="ml-2 text-xs text-foreground/50">(Random for Free plan)</span>
-                                        )}
+                                        Color Tag
                                     </label>
 
-                                    {isPro ? (
-                                        // Pro: Full color grid
-                                        <div className="grid grid-cols-5 gap-2">
-                                            {proColors.map((opt) => (
-                                                <button
-                                                    key={opt.value}
-                                                    onClick={() => setColor(opt.value as FolderColor)}
-                                                    className={cn(
-                                                        "relative h-8 w-full rounded-lg border-2 transition-all",
-                                                        opt.className,
-                                                        color === opt.value
-                                                            ? "border-foreground ring-2 ring-foreground ring-offset-2"
-                                                            : "border-transparent hover:border-foreground/30"
-                                                    )}
-                                                >
-                                                    {color === opt.value && (
-                                                        <Check className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow" />
-                                                    )}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        // Free: Basic pastel colors (disabled)
-                                        <div className="flex gap-2">
-                                            {basicColors.map((opt) => (
-                                                <button
-                                                    key={opt.value}
-                                                    disabled
-                                                    className={cn(
-                                                        "h-8 w-8 rounded-lg border-2 border-transparent",
-                                                        opt.className,
-                                                        "opacity-50 cursor-not-allowed"
-                                                    )}
-                                                    title="Upgrade to Pro for custom colors"
-                                                />
-                                            ))}
-                                        </div>
-                                    )}
+                                    <div className="grid grid-cols-5 gap-2">
+                                        {allColors.map((opt) => (
+                                            <button
+                                                key={opt.value}
+                                                onClick={() => setColor(opt.value)}
+                                                type="button"
+                                                className={cn(
+                                                    "relative h-8 w-full rounded-lg border-2 transition-all",
+                                                    opt.className,
+                                                    color === opt.value
+                                                        ? "border-foreground ring-2 ring-foreground ring-offset-2"
+                                                        : "border-transparent hover:border-foreground/30 hover:scale-105"
+                                                )}
+                                                title={opt.value}
+                                            >
+                                                {color === opt.value && (
+                                                    <Check className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow-md" />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
 
