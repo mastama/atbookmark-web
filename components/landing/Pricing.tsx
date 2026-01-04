@@ -5,36 +5,39 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, ChevronDown, Sparkles, Shield, Flame } from "lucide-react";
+import { Heart, Coffee, ChevronDown, Code, Server, Sparkles } from "lucide-react";
 import { ProModal } from "@/components/modals/ProModal";
 
-const freePlanFeatures = [
-    "Save up to 100 Bookmarks",
-    "5 Custom Folders & Tags",
-    "Sync Mobile & Desktop",
-];
-
-const proPlanFeatures = [
-    "Everything in Free, plus:",
-    "Unlimited Storage & Folders",
-    "AI Auto-Tagging & Summaries",
-    "Nested Folders",
-    "Custom Colors",
-    "Dark Mode",
+const supportReasons = [
+    {
+        icon: Server,
+        title: "Server Costs",
+        description: "Hosting and infrastructure",
+    },
+    {
+        icon: Code,
+        title: "Development",
+        description: "New features & improvements",
+    },
+    {
+        icon: Sparkles,
+        title: "Maintenance",
+        description: "Bug fixes & updates",
+    },
 ];
 
 const faqs = [
     {
-        question: "Why should I upgrade to Pro?",
-        answer: "The Free plan is great for starting, but Pro gives you unlimited space and AI superpowers to actually remember what you read.",
+        question: "Is atBookmark really free?",
+        answer: "Yes! All features are completely free with no hidden costs or premium tiers. Every tool is available to everyone.",
     },
     {
-        question: "What payment methods do you accept?",
-        answer: "We accept QRIS (GoPay, OVO, Dana) and Bank Transfer (BCA, Mandiri).",
+        question: "Why ask for support then?",
+        answer: "This project is independently developed and maintained. Your support helps cover server costs and allows me to keep improving atBookmark.",
     },
     {
-        question: "Can I cancel anytime?",
-        answer: "Yes! There are no contracts. You can cancel directly from your dashboard.",
+        question: "How will my support be used?",
+        answer: "100% goes directly to development costs: server hosting, domain fees, and my coffee supply to keep coding late nights! ☕",
     },
 ];
 
@@ -93,13 +96,9 @@ interface PricingProps {
 
 export function Pricing({ isLoggedIn = false }: PricingProps) {
     const router = useRouter();
-    const [isAnnual, setIsAnnual] = useState(false);
-    const [isProModalOpen, setIsProModalOpen] = useState(false);
+    const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
-    const monthlyPrice = "Rp 29rb";
-    const annualPrice = "Rp 290rb";
-
-    const handleFreeClick = () => {
+    const handleGetStarted = () => {
         if (isLoggedIn) {
             router.push("/dashboard");
         } else {
@@ -107,18 +106,10 @@ export function Pricing({ isLoggedIn = false }: PricingProps) {
         }
     };
 
-    const handleUpgradeClick = () => {
-        if (isLoggedIn) {
-            setIsProModalOpen(true);
-        } else {
-            router.push("/register?plan=pro");
-        }
-    };
-
     return (
         <>
             <section id="pricing" className="bg-background py-20 px-4">
-                <div className="mx-auto max-w-5xl">
+                <div className="mx-auto max-w-4xl">
                     {/* Section Header */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -126,177 +117,112 @@ export function Pricing({ isLoggedIn = false }: PricingProps) {
                         viewport={{ once: true }}
                         className="text-center mb-12"
                     >
-                        <h2 className="font-display text-3xl font-bold md:text-4xl mb-4">
-                            Choose Your{" "}
-                            <span className="text-primary">Perfect Plan</span>
+                        <div className="inline-flex items-center gap-2 bg-accent-mint/20 text-green-700 px-4 py-2 rounded-full text-sm font-bold mb-4">
+                            <Heart className="h-4 w-4" />
+                            Support the Developer
+                        </div>
+                        <h2 className="font-display text-3xl font-bold md:text-4xl mb-6">
+                            Help Keep atBookmark{" "}
+                            <span className="text-primary">Free Forever</span>
                         </h2>
-                        <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
-                            Start free, upgrade anytime. A small investment for maximum productivity.
-                        </p>
                     </motion.div>
 
-                    {/* Toggle Switch */}
+                    {/* Main Appeal Section */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="flex flex-col items-center justify-center gap-3 mb-12"
+                        className="mb-12"
                     >
-                        <div className="inline-flex items-center gap-3 p-1.5 bg-muted rounded-full border-2 border-border">
-                            <button
-                                onClick={() => setIsAnnual(false)}
-                                className={`px-5 py-2.5 rounded-full font-semibold text-sm transition-all duration-200 ${!isAnnual
-                                    ? "bg-foreground text-background shadow-brutal-sm"
-                                    : "text-foreground/70 hover:text-foreground"
-                                    }`}
-                            >
-                                Monthly
-                            </button>
-                            <button
-                                onClick={() => setIsAnnual(true)}
-                                className={`px-5 py-2.5 rounded-full font-semibold text-sm transition-all duration-200 ${isAnnual
-                                    ? "bg-foreground text-background shadow-brutal-sm"
-                                    : "text-foreground/70 hover:text-foreground"
-                                    }`}
-                            >
-                                Yearly
-                            </button>
-                        </div>
-                        <AnimatePresence>
-                            {isAnnual && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -10, scale: 0.9 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: -10, scale: 0.9 }}
-                                    className="inline-flex items-center gap-1.5 bg-accent-mint px-3 py-1 rounded-full border-2 border-border text-sm font-bold"
+                        <Card className="p-8 md:p-10 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/50 dark:to-emerald-950/50 border-2 border-green-200 dark:border-green-800">
+                            <div className="max-w-2xl mx-auto text-center">
+                                <div className="text-4xl mb-4">☕</div>
+
+                                <p className="text-lg text-gray-800 dark:text-gray-200 mb-4">
+                                    <strong>atBookmark is completely free to use</strong> — no premium tiers,
+                                    no locked features. Every tool you see is available to everyone, forever.
+                                </p>
+
+                                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                                    This project is independently developed and maintained by a solo developer.
+                                    Your support helps cover server costs, ongoing development, and future improvements.
+                                </p>
+
+                                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                                    If atBookmark has been useful to you, consider buying me a coffee!
+                                    Even small contributions make a big difference and keep this project alive.
+                                </p>
+
+                                <Button
+                                    size="lg"
+                                    onClick={() => setIsSupportModalOpen(true)}
+                                    className="bg-green-600 hover:bg-green-700 text-white font-semibold shadow-brutal-sm"
                                 >
-                                    <Sparkles className="h-4 w-4" />
-                                    Save 2 months (17% off)
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                                    <Coffee className="mr-2 h-5 w-5" />
+                                    Support with a Coffee ☕
+                                </Button>
+
+                                <p className="mt-4 text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1">
+                                    <Heart className="h-3 w-3" />
+                                    All support is entirely voluntary
+                                </p>
+                            </div>
+                        </Card>
                     </motion.div>
 
-                    {/* Pricing Cards */}
+                    {/* What Your Support Covers */}
                     <motion.div
                         variants={containerVariants}
                         initial="hidden"
                         whileInView="visible"
                         viewport={{ once: true }}
-                        className="grid gap-6 md:gap-8 md:grid-cols-2 items-start"
+                        className="mb-16"
                     >
-                        {/* Free Plan Card */}
-                        <motion.div variants={itemVariants}>
-                            <Card className="h-full p-6 md:p-8 bg-background border-2 border-border">
-                                <div className="mb-6">
-                                    <span className="inline-block rounded-full bg-muted px-3 py-1 text-xs font-bold mb-3">
-                                        Starter
-                                    </span>
-                                    <h3 className="font-display text-2xl font-bold mb-1">
-                                        Starter
-                                    </h3>
-                                    <p className="text-foreground/70 text-sm">
-                                        Enough to organize your browser chaos.
-                                    </p>
-                                </div>
-
-                                <div className="mb-6">
-                                    <div className="flex items-baseline gap-1">
-                                        <span className="font-display text-4xl font-bold">
-                                            Rp 0
-                                        </span>
-                                        <span className="text-foreground/70">/ forever</span>
-                                    </div>
-                                </div>
-
-                                <Button
-                                    variant="outline"
-                                    size="lg"
-                                    className="w-full border-2 border-border bg-background hover:bg-muted mb-8 font-semibold"
-                                    onClick={handleFreeClick}
-                                >
-                                    Start for Free
-                                </Button>
-
-                                <ul className="space-y-3">
-                                    {freePlanFeatures.map((feature, i) => (
-                                        <li key={i} className="flex items-start gap-3">
-                                            <div className="mt-0.5 h-5 w-5 rounded-full bg-accent-mint border-2 border-border flex items-center justify-center flex-shrink-0">
-                                                <Check className="h-3 w-3 text-foreground" strokeWidth={3} />
+                        <h3 className="font-display text-xl font-bold text-center mb-8">
+                            What Your Support Covers
+                        </h3>
+                        <div className="grid gap-4 md:grid-cols-3">
+                            {supportReasons.map((reason, i) => {
+                                const Icon = reason.icon;
+                                return (
+                                    <motion.div key={i} variants={itemVariants}>
+                                        <Card className="p-6 text-center bg-background border-2 border-border h-full">
+                                            <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-accent-mint/20 mb-4">
+                                                <Icon className="h-6 w-6 text-green-600" />
                                             </div>
-                                            <span className="text-foreground/80">{feature}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </Card>
-                        </motion.div>
+                                            <h4 className="font-bold mb-1">{reason.title}</h4>
+                                            <p className="text-sm text-foreground/60">{reason.description}</p>
+                                        </Card>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
+                    </motion.div>
 
-                        {/* Pro Plan Card */}
-                        <motion.div variants={itemVariants} className="relative">
-                            {/* Popular Badge */}
-                            <div className="absolute -top-3 -right-2 md:-top-4 md:-right-3 z-10">
-                                <div className="inline-flex items-center gap-1.5 bg-accent-peach px-3 py-1.5 rounded-full border-2 border-border shadow-brutal-sm font-bold text-sm">
-                                    <Flame className="h-4 w-4" />
-                                    Most Popular
-                                </div>
-                            </div>
-
-                            <Card className="h-full p-6 md:p-8 bg-[#FACC15] border-2 border-border shadow-[8px_8px_0px_#000] md:scale-[1.02]">
-                                <div className="mb-6">
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-foreground/10 px-3 py-1 text-xs font-bold mb-3">
-                                        <Sparkles className="h-3 w-3" />
-                                        Pro
-                                    </span>
-                                    <h3 className="font-display text-2xl font-bold mb-1">
-                                        Second Brain
-                                    </h3>
-                                    <p className="text-foreground/80 text-sm">
-                                        Unlock your full potential with AI.
-                                    </p>
-                                </div>
-
-                                <div className="mb-6">
-                                    <AnimatePresence mode="wait">
-                                        <motion.div
-                                            key={isAnnual ? "annual" : "monthly"}
-                                            initial={{ opacity: 0, y: -10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: 10 }}
-                                            transition={{ duration: 0.2 }}
-                                            className="flex items-baseline gap-1"
-                                        >
-                                            <span className="font-display text-4xl font-bold">
-                                                {isAnnual ? annualPrice : monthlyPrice}
-                                            </span>
-                                            <span className="text-foreground/70">
-                                                / {isAnnual ? "year" : "month"}
-                                            </span>
-                                        </motion.div>
-                                    </AnimatePresence>
-                                </div>
-
-                                <Button
-                                    size="lg"
-                                    className="w-full border-2 border-border bg-foreground text-background hover:bg-neutral-800 mb-8 font-semibold shadow-brutal-sm"
-                                    onClick={handleUpgradeClick}
-                                >
-                                    Upgrade Now 🚀
-                                </Button>
-
-                                <ul className="space-y-3">
-                                    {proPlanFeatures.map((feature, i) => (
-                                        <li key={i} className="flex items-start gap-3">
-                                            <div className="mt-0.5 h-5 w-5 rounded-full bg-foreground/10 border-2 border-border flex items-center justify-center flex-shrink-0">
-                                                <Check className="h-3 w-3 text-foreground" strokeWidth={3} />
-                                            </div>
-                                            <span className={`text-foreground/90 ${i === 0 ? "font-semibold" : ""}`}>
-                                                {feature}
-                                            </span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </Card>
-                        </motion.div>
+                    {/* Free to Use Card */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="mb-16"
+                    >
+                        <Card className="p-8 bg-background border-2 border-border text-center">
+                            <h3 className="font-display text-2xl font-bold mb-2">
+                                🎉 100% Free to Use
+                            </h3>
+                            <p className="text-foreground/70 mb-6 max-w-lg mx-auto">
+                                Not ready to support? No problem! atBookmark is free forever.
+                                Just using the app and spreading the word helps too!
+                            </p>
+                            <Button
+                                variant="outline"
+                                size="lg"
+                                onClick={handleGetStarted}
+                                className="border-2 border-border font-semibold"
+                            >
+                                {isLoggedIn ? "Go to Dashboard" : "Get Started for Free"}
+                            </Button>
+                        </Card>
                     </motion.div>
 
                     {/* Trust Badges */}
@@ -304,15 +230,15 @@ export function Pricing({ isLoggedIn = false }: PricingProps) {
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="flex flex-wrap items-center justify-center gap-4 md:gap-8 mt-12 text-sm text-foreground/70"
+                        className="flex flex-wrap items-center justify-center gap-4 md:gap-8 mb-16 text-sm text-foreground/70"
                     >
                         <div className="flex items-center gap-2">
-                            <Shield className="h-4 w-4" />
-                            <span>Secure Payment (Midtrans)</span>
+                            <span>🔒</span>
+                            <span>Secure Payment (QRIS / Transfer)</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <span>🇮🇩</span>
-                            <span>Made in Indonesia</span>
+                            <span>Made with ❤️ in Indonesia</span>
                         </div>
                     </motion.div>
 
@@ -321,7 +247,6 @@ export function Pricing({ isLoggedIn = false }: PricingProps) {
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        className="mt-20"
                     >
                         <h3 className="font-display text-2xl font-bold text-center mb-8">
                             Frequently Asked Questions
@@ -335,8 +260,8 @@ export function Pricing({ isLoggedIn = false }: PricingProps) {
                 </div>
             </section>
 
-            {/* Pro Modal */}
-            <ProModal isOpen={isProModalOpen} onClose={() => setIsProModalOpen(false)} />
+            {/* Support Modal */}
+            <ProModal isOpen={isSupportModalOpen} onClose={() => setIsSupportModalOpen(false)} />
         </>
     );
 }
