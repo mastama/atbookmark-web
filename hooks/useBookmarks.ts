@@ -26,6 +26,8 @@ export interface Bookmark {
     isRead: boolean;
     archived: boolean;
     createdAt: number;
+    lastAccessedAt: number;  // Track when bookmark was last accessed
+    archivedAt?: number;     // Track when bookmark was archived
 }
 
 interface BookmarksState {
@@ -65,14 +67,19 @@ interface BookmarksState {
     updateReadStatus: (ids: string[], isRead: boolean) => void;
 
     // Archive Actions
-    archiveBookmarks: (ids: string[], isPro?: boolean) => { success: boolean; error?: string };
+    archiveBookmarks: (ids: string[]) => { success: boolean; error?: string };
     restoreBookmarks: (ids: string[]) => void;
     getArchivedBookmarks: () => Bookmark[];
     getActiveBookmarks: () => Bookmark[];
     getArchivedCount: () => number;
 
-    // Limit Checks
-    canAddBookmark: (isPro: boolean) => { allowed: boolean; error?: string };
+    // Access Tracking & Auto-Archive
+    recordAccess: (id: string) => void;
+    runAutoArchive: () => { archivedCount: number; deletedCount: number };
+    permanentlyDeleteBookmarks: (ids: string[]) => void;
+
+    // Limit Checks - Now always returns allowed (all features free)
+    canAddBookmark: () => { allowed: boolean; error?: string };
 }
 
 // --- Helpers ---
@@ -101,6 +108,9 @@ const normalizeTag = (tag: string): string => {
     return clean.startsWith("#") ? clean : `#${clean}`;
 };
 
+// Time constants
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+
 // --- Initial Data ---
 // Data dummy disesuaikan dengan struktur baru (lowercase tags)
 const initialBookmarks: Bookmark[] = [
@@ -122,6 +132,7 @@ const initialBookmarks: Bookmark[] = [
         isRead: false,
         archived: false,
         createdAt: Date.now() - 7200000,
+        lastAccessedAt: Date.now() - 7200000,
     },
 ];
 
@@ -133,11 +144,6 @@ export const useBookmarks = create<BookmarksState>()(
             bookmarks: initialBookmarks,
 
             addBookmark: (data) => {
-                const state = get();
-                const activeBookmarks = state.bookmarks.filter(b => !b.isTrashed && !b.archived);
-
-                // Note: Limit checks should be done via canAddBookmark before calling this method
-
                 const id = `bm_${Date.now()}`;
                 const domain = extractDomain(data.url);
                 const now = Date.now();
@@ -167,6 +173,7 @@ export const useBookmarks = create<BookmarksState>()(
                     isRead: false,
                     archived: false,
                     createdAt: now,
+                    lastAccessedAt: now,
                 };
 
                 set((state) => ({
@@ -253,7 +260,15 @@ export const useBookmarks = create<BookmarksState>()(
 
                         // Handle isRead and archived updates
                         if (data.isRead !== undefined) updatedBookmark.isRead = data.isRead;
-                        if (data.archived !== undefined) updatedBookmark.archived = data.archived;
+                        if (data.archived !== undefined) {
+                            updatedBookmark.archived = data.archived;
+                            // Set archivedAt when archiving
+                            if (data.archived) {
+                                updatedBookmark.archivedAt = Date.now();
+                            } else {
+                                updatedBookmark.archivedAt = undefined;
+                            }
+                        }
 
                         return updatedBookmark;
                     }),
@@ -320,29 +335,21 @@ export const useBookmarks = create<BookmarksState>()(
                 }));
             },
 
-            // Archive Actions
-            archiveBookmarks: (ids: string[], isPro: boolean = false) => {
-                const state = get();
-                const FREE_ARCHIVE_LIMIT = 5;
-                const currentArchived = state.bookmarks.filter(b => b.archived && !b.isTrashed).length;
-                const newArchiveCount = currentArchived + ids.length;
-
-                if (!isPro && newArchiveCount > FREE_ARCHIVE_LIMIT) {
-                    return { success: false, error: "ARCHIVE_LIMIT_REACHED" };
-                }
-
-                set({
+            // Archive Actions - Now without limits (all free)
+            archiveBookmarks: (ids: string[]) => {
+                const now = Date.now();
+                set((state) => ({
                     bookmarks: state.bookmarks.map((b) =>
-                        ids.includes(b.id) ? { ...b, archived: true } : b
+                        ids.includes(b.id) ? { ...b, archived: true, archivedAt: now } : b
                     ),
-                });
+                }));
                 return { success: true };
             },
 
             restoreBookmarks: (ids: string[]) => {
                 set((state) => ({
                     bookmarks: state.bookmarks.map((b) =>
-                        ids.includes(b.id) ? { ...b, archived: false } : b
+                        ids.includes(b.id) ? { ...b, archived: false, archivedAt: undefined } : b
                     ),
                 }));
             },
@@ -359,15 +366,69 @@ export const useBookmarks = create<BookmarksState>()(
                 return get().bookmarks.filter((b) => b.archived && !b.isTrashed).length;
             },
 
-            // Limit Checks
-            canAddBookmark: (isPro: boolean) => {
-                const FREE_BOOKMARK_LIMIT = 100;
-                const state = get();
-                const activeBookmarks = state.bookmarks.filter(b => !b.isTrashed && !b.archived);
+            // Record access when user clicks on a bookmark
+            recordAccess: (id: string) => {
+                set((state) => ({
+                    bookmarks: state.bookmarks.map((b) =>
+                        b.id === id ? { ...b, lastAccessedAt: Date.now() } : b
+                    ),
+                }));
+            },
 
-                if (!isPro && activeBookmarks.length >= FREE_BOOKMARK_LIMIT) {
-                    return { allowed: false, error: "BOOKMARK_LIMIT_REACHED" };
-                }
+            // Auto-archive: archive bookmarks not accessed for 30 days, delete archived items after 30 days
+            runAutoArchive: () => {
+                const now = Date.now();
+                const state = get();
+                let archivedCount = 0;
+                let deletedCount = 0;
+
+                // Find bookmarks to auto-archive (active, not accessed for 30 days, and already read or marked as such)
+                const toArchive = state.bookmarks.filter((b) => {
+                    if (b.archived || b.isTrashed) return false;
+                    const lastAccess = b.lastAccessedAt || b.createdAt;
+                    const daysSinceAccess = now - lastAccess;
+                    // Archive if not accessed for 30 days AND (isRead OR never opened)
+                    return daysSinceAccess > THIRTY_DAYS_MS;
+                });
+
+                // Find archived bookmarks to permanently delete (archived for 30 days)
+                const toDelete = state.bookmarks.filter((b) => {
+                    if (!b.archived || b.isTrashed) return false;
+                    const archivedAt = b.archivedAt || b.createdAt;
+                    const daysSinceArchived = now - archivedAt;
+                    return daysSinceArchived > THIRTY_DAYS_MS;
+                });
+
+                archivedCount = toArchive.length;
+                deletedCount = toDelete.length;
+
+                const toArchiveIds = toArchive.map(b => b.id);
+                const toDeleteIds = toDelete.map(b => b.id);
+
+                set((state) => ({
+                    bookmarks: state.bookmarks
+                        // Remove permanently deleted bookmarks
+                        .filter(b => !toDeleteIds.includes(b.id))
+                        // Archive inactive bookmarks
+                        .map(b =>
+                            toArchiveIds.includes(b.id)
+                                ? { ...b, archived: true, archivedAt: now }
+                                : b
+                        ),
+                }));
+
+                return { archivedCount, deletedCount };
+            },
+
+            // Permanently delete bookmarks (no confirmation, used by auto-delete)
+            permanentlyDeleteBookmarks: (ids: string[]) => {
+                set((state) => ({
+                    bookmarks: state.bookmarks.filter(b => !ids.includes(b.id)),
+                }));
+            },
+
+            // Limit Checks - Now always allowed (all features free)
+            canAddBookmark: () => {
                 return { allowed: true };
             },
         }),

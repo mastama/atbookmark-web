@@ -64,7 +64,7 @@ export default function ArchivesPage() {
                 </div>
             </div>
 
-            {/* Pro Banner */}
+            {/* Auto-Archive Info Banner */}
             <AnimatePresence>
                 {showProBanner && (
                     <motion.div
@@ -79,14 +79,15 @@ export default function ArchivesPage() {
                         >
                             <X className="h-4 w-4" />
                         </button>
-                        <div className="flex items-center gap-3">
-                            <Sparkles className="h-5 w-5 text-primary" />
+                        <div className="flex items-start gap-3">
+                            <Sparkles className="h-5 w-5 text-primary mt-0.5" />
                             <div>
-                                <p className="font-semibold text-foreground">
-                                    ✨ Pro Tip: Set up Auto-Archive
+                                <p className="font-semibold text-foreground mb-1">
+                                    🔄 Smart Auto-Archive
                                 </p>
                                 <p className="text-sm text-foreground/60">
-                                    Keep your library fresh by automatically archiving items older than 90 days.
+                                    Bookmarks not accessed for <strong>30 days</strong> are automatically archived.
+                                    Archived items are <strong>permanently deleted</strong> after another 30 days.
                                 </p>
                             </div>
                         </div>
