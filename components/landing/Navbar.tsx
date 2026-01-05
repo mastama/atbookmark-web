@@ -1,20 +1,25 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Menu, X, ArrowRight } from "lucide-react";
+import { Menu, X, ArrowRight, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth"; // Use the hook, not the context directly if outside provider 
+// OR better: The Landing Page is likely OUTSIDE the Dashboard Layout where AuthProvider might be?
+// Actually, AppShell wraps everything? Let's check layout.tsx.
+// If AppLayout wraps everything, we can use useAuthContext.
+// But earlier we saw `app/layout.tsx` imports AuthProvider.
+// let's use `useAuthContext` from `@/context/AuthContext` if possible, 
+// or `useAuth` hook which is a wrapper. 
+// However, the `Navbar.tsx` previously used `localStorage`.
+// `useAuth` in `hooks/useAuth.ts` is just API wrappers.
+// `useAuthContext` is the state.
+import { useAuthContext } from "@/context/AuthContext";
 
 export function Navbar() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-    // Check auth status on mount (client-side only)
-    useEffect(() => {
-        const session = localStorage.getItem("atbookmark_session");
-        setIsAuthenticated(session === "authenticated");
-    }, []);
+    const { isAuthenticated, user } = useAuthContext();
 
     return (
         <header className="sticky top-0 z-50 w-full border-b-2 border-border bg-background/95 backdrop-blur-sm">
@@ -43,7 +48,7 @@ export function Navbar() {
                     {isAuthenticated ? (
                         <Link href="/dashboard">
                             <Button size="sm">
-                                Go to Dashboard
+                                {user?.name ? `Hi, ${user.name.split(' ')[0]}` : 'Dashboard'}
                                 <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>
                         </Link>

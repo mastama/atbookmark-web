@@ -4,11 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Puzzle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 
 export function InstallExtensionButton() {
     const router = useRouter();
-    const { user } = useAuth();
+    const { user } = useAuthContext();
     const [isLoading, setIsLoading] = useState(false);
 
     const handleClick = () => {

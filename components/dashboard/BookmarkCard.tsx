@@ -214,7 +214,7 @@ export function BookmarkCard({
 
                     <img
                         src={
-                            imageError
+                            imageError || !bookmark.coverImage
                                 ? `https://ui-avatars.com/api/?name=${bookmark.domain}&background=random&color=fff`
                                 : bookmark.coverImage
                         }

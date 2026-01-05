@@ -5,11 +5,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Sparkles, Play, TrendingDown, X, ArrowRight } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 import { InstallExtensionButton } from "@/components/landing/InstallExtensionButton";
 
 export function Hero() {
-    const { user } = useAuth();
+    const { user } = useAuthContext();
 
     return (
         <section className="relative overflow-hidden bg-background px-4 py-16 md:py-24 lg:py-32">

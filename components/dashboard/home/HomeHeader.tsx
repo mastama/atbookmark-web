@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Search, Command, Link2, ArrowRight, Sparkles } from "lucide-react";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { toast } from "sonner";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext, type User } from "@/context/AuthContext";
 
 interface HomeHeaderProps {
     onSearchClick?: () => void;
@@ -18,7 +18,7 @@ const getGreeting = (): string => {
     return "Good evening";
 };
 
-const getDisplayName = (user: { name: string; email: string; avatar: string } | null): string => {
+const getDisplayName = (user: User | null): string => {
     return user?.name || user?.email?.split("@")[0] || "User";
 };
 
@@ -35,7 +35,7 @@ export function HomeHeader({ onSearchClick }: HomeHeaderProps) {
     const [captureUrl, setCaptureUrl] = useState("");
     const [isCapturing, setIsCapturing] = useState(false);
     const { addBookmark } = useBookmarks();
-    const { user } = useAuth();
+    const { user } = useAuthContext();
     const displayName = getDisplayName(user);
 
     const handleQuickCapture = useCallback(
