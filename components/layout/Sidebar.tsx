@@ -219,11 +219,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     // Drag state
     const [draggedFolder, setDraggedFolder] = useState<FolderType | null>(null);
 
-    const inboxFolder = folders.find((f) => f.id === "inbox");
-    const inboxCount = getBookmarkCount("inbox");
+    // Fix: Find inbox by logic (system type + name Inbox) NOT hardcoded ID 'inbox'
+    const inboxFolder = folders.find((f) => f.type === 'system' && f.name === 'Inbox');
+    // If inboxFolder is found, use its ID for counting. Fallback to 'inbox' string if needed but likely wrong.
+    const inboxCount = inboxFolder ? getBookmarkCount(inboxFolder.id) : 0;
+
+    // Ensure Inbox is REMOVED from custom folders list if it accidentally got in there (it shouldn't if type is system)
     const customFolders = folders.filter((f) => f.type === "custom");
 
-    const pinnedRootFolders = getPinnedRootFolders().filter((f) => f.id !== "inbox");
+    const pinnedRootFolders = getPinnedRootFolders().filter((f) =>
+        f.id !== "inbox" && f.type !== 'system' && f.name !== 'Inbox'
+    );
     const visibleFolders = isPro
         ? pinnedRootFolders
         : pinnedRootFolders.slice(0, FREE_FOLDER_LIMIT);
@@ -329,10 +335,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     {inboxFolder && (
                         <div className="mb-4">
                             <Link
-                                href="/dashboard/folder/inbox"
+                                href="/dashboard/inbox"
                                 className={cn(
                                     "group flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition-all",
-                                    pathname === "/dashboard/folder/inbox"
+                                    pathname === "/dashboard/inbox"
                                         ? "bg-primary/10 text-primary"
                                         : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                                 )}

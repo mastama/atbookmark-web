@@ -28,11 +28,12 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext as useAuth } from "@/context/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { useSettings } from "@/hooks/useSettings";
 import { useBookmarks } from "@/hooks/useBookmarks";
 import { cn } from "@/lib/utils";
+import api from "@/lib/api";
 
 // Tab Types - Simplified (no Intelligence/Billing)
 type SettingsTab = "general" | "appearance" | "usage";
@@ -52,7 +53,7 @@ const APP_ICONS = [
 ];
 
 export default function SettingsPage() {
-    const { user } = useAuth();
+    const { user, refreshProfile } = useAuth();
     const { folders, tags } = useOrganization();
     const { theme, density, appIcon, updateSettings } = useSettings();
     const searchParams = useSearchParams();
@@ -70,8 +71,16 @@ export default function SettingsPage() {
 
     // Profile State
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [avatarPreview, setAvatarPreview] = useState<string | null>(user?.avatar || null);
-    const [displayName, setDisplayName] = useState(user?.name || "");
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [displayName, setDisplayName] = useState("");
+
+    // Sync state with user data when it loads
+    useEffect(() => {
+        if (user) {
+            setDisplayName(user.name || "");
+            setAvatarPreview(user.avatar || null);
+        }
+    }, [user]);
 
     // Favicon helper for app icon
     const updateFavicon = (iconId: string) => {
@@ -113,9 +122,19 @@ export default function SettingsPage() {
 
     const handleSaveProfile = async () => {
         setSaving(true);
-        await new Promise((r) => setTimeout(r, 800));
-        setSaving(false);
-        toast.success("Profile saved successfully!");
+        try {
+            await api.patch("/users/profile", {
+                name: displayName,
+                image: avatarPreview
+            });
+            await refreshProfile(); // Update context
+            toast.success("Profile saved successfully!");
+        } catch (error) {
+            console.error("Failed to save profile:", error);
+            toast.error("Failed to save profile. Please try again.");
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleExport = () => {
@@ -239,7 +258,7 @@ export default function SettingsPage() {
                                 <div>
                                     <label className="mb-2 block text-sm font-medium">Email</label>
                                     <Input
-                                        value={user?.email || "user@example.com"}
+                                        value={user?.email || ""}
                                         disabled
                                         className="bg-gray-50 dark:bg-muted"
                                     />

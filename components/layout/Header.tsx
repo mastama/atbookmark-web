@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext";
+import { useAuthContext } from "@/context/AuthContext";
 import { useOrganization } from "@/hooks/useOrganization";
 import { Button } from "@/components/ui/button";
 import { AddBookmarkModal } from "@/components/modals/AddBookmarkModal";
@@ -24,7 +24,7 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick }: HeaderProps) {
-    const { user, logout } = useAuth();
+    const { user, logout } = useAuthContext();
     const { isPro } = useOrganization();
     const [profileOpen, setProfileOpen] = useState(false);
     const [addModalOpen, setAddModalOpen] = useState(false);
@@ -140,8 +140,8 @@ export function Header({ onMenuClick }: HeaderProps) {
                                 >
                                     {/* User Info */}
                                     <div className="mb-2 border-b border-border/50 px-3 py-2">
-                                        <p className="font-display font-bold">{user?.name}</p>
-                                        <p className="text-xs text-foreground/50">{user?.email}</p>
+                                        <p className="font-display font-bold truncate">{user?.name || "User"}</p>
+                                        <p className="text-xs text-foreground/50 truncate w-full">{user?.email || "No email"}</p>
                                     </div>
 
                                     {/* Menu Items */}
@@ -163,17 +163,9 @@ export function Header({ onMenuClick }: HeaderProps) {
                                             >
                                                 <CreditCard className="h-4 w-4" />
                                                 Trakteer
-
-                                                {/* LOGIC UPDATE: Ternary Operator */}
-                                                {isPro ? (
-                                                    <span className="ml-auto rounded-full bg-secondary px-2 py-0.5 text-xs font-bold text-secondary-foreground">
-                                                        Pro
-                                                    </span>
-                                                ) : (
-                                                    <span className="ml-auto rounded-full bg-gray-200 px-2 py-0.5 text-xs font-bold text-gray-600">
-                                                        Free
-                                                    </span>
-                                                )}
+                                                <span className="ml-auto rounded-full bg-gray-200 px-2 py-0.5 text-xs font-bold text-gray-600">
+                                                    Free
+                                                </span>
                                             </button>
                                         </li>
                                         <li className="border-t border-border/50 pt-1">
