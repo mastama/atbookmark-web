@@ -88,6 +88,9 @@ interface BookmarksState {
 
     // Limits
     canAddBookmark: () => { allowed: boolean; error?: string };
+
+    // Auto Archive
+    runAutoArchive: () => { archivedCount: number; deletedCount: number };
 }
 
 // --- Helpers ---
@@ -314,5 +317,60 @@ export const useBookmarks = create<BookmarksState>((set, get) => ({
         }));
     },
 
-    canAddBookmark: () => ({ allowed: true })
+    canAddBookmark: () => ({ allowed: true }),
+
+    runAutoArchive: () => {
+        const state = get();
+        const now = Date.now();
+        const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+        const toArchiveIds: string[] = [];
+        const toDeleteIds: string[] = [];
+
+        state.bookmarks.forEach((b) => {
+            if (b.isTrashed) return;
+
+            // Rule 1: Not accessed for 30 days -> Archive
+            if (!b.archived) {
+                if (now - b.lastAccessedAt > THIRTY_DAYS_MS) {
+                    toArchiveIds.push(b.id);
+                }
+            }
+            // Rule 2: Archived for 30 days -> Delete
+            else if (b.archived && b.archivedAt) {
+                if (now - b.archivedAt > THIRTY_DAYS_MS) {
+                    toDeleteIds.push(b.id);
+                }
+            }
+        });
+
+        // Effect 1: Archive
+        if (toArchiveIds.length > 0) {
+            Promise.all(toArchiveIds.map((id) => api.patch(`/bookmarks/${id}`, { archived: true }))).catch((err) =>
+                console.error("Auto-archive failed", err)
+            );
+
+            set((prev) => ({
+                bookmarks: prev.bookmarks.map((b) =>
+                    toArchiveIds.includes(b.id) ? { ...b, archived: true, archivedAt: now } : b
+                ),
+            }));
+        }
+
+        // Effect 2: Delete
+        if (toDeleteIds.length > 0) {
+            Promise.all(toDeleteIds.map((id) => api.delete(`/bookmarks/${id}`))).catch((err) =>
+                console.error("Auto-delete failed", err)
+            );
+
+            set((prev) => ({
+                bookmarks: prev.bookmarks.filter((b) => !toDeleteIds.includes(b.id)),
+            }));
+        }
+
+        return {
+            archivedCount: toArchiveIds.length,
+            deletedCount: toDeleteIds.length,
+        };
+    },
 }));
