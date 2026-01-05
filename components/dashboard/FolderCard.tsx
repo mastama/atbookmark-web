@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Folder as FolderIcon, MoreVertical, Pin, PinOff, Trash2, ChevronRight } from "lucide-react";
 import { Folder, FolderColor, useOrganization } from "@/hooks/useOrganization";
+import { useBookmarks } from "@/hooks/useBookmarks";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -27,6 +28,8 @@ const colorClasses: Record<FolderColor, string> = {
 
 export function FolderCard({ folder, index, onDragStart, onDragOver, onDrop }: FolderCardProps) {
     const { togglePin, deleteFolder, getChildFolders } = useOrganization();
+    const { getBookmarkCount } = useBookmarks();
+    const count = getBookmarkCount(folder.id);
     const [menuOpen, setMenuOpen] = useState(false);
     const [isDragOver, setIsDragOver] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -125,8 +128,9 @@ export function FolderCard({ folder, index, onDragStart, onDragOver, onDrop }: F
                                     <h3 className="font-display font-bold">{folder.name}</h3>
                                     {folder.isPinned && <Pin className="h-3 w-3 text-foreground/40" />}
                                 </div>
+
                                 <p className="text-sm text-foreground/50">
-                                    {folder.count} bookmarks
+                                    {count} bookmarks
                                     {childCount > 0 && (
                                         <span className="ml-2 text-xs">
                                             • {childCount} sub-folder{childCount !== 1 ? "s" : ""}

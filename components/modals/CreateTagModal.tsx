@@ -27,7 +27,7 @@ export function CreateTagModal({ isOpen, onClose }: CreateTagModalProps) {
         setSaving(true);
         await new Promise((r) => setTimeout(r, 500));
 
-        const result = addTag(name);
+        const result = await addTag(name);
 
         setSaving(false);
 

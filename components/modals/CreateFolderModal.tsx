@@ -76,7 +76,7 @@ export function CreateFolderModal({ isOpen, onClose }: CreateFolderModalProps) {
         await new Promise((r) => setTimeout(r, 500));
 
         // Always pass the selected color now
-        const result = addFolder(name, color as FolderColor, parentId || null);
+        const result = await addFolder(name, color as FolderColor, parentId || null);
 
         setSaving(false);
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import api from "@/lib/api";
+import { toast } from "sonner";
 import { useBookmarks } from "./useBookmarks";
 
 export type FolderColor = "mint" | "lavender" | "coral" | "sky" | "yellow" | "gray" | string;
@@ -11,7 +12,7 @@ export interface Folder {
     name: string;
     type: "system" | "custom";
     color: FolderColor;
-    count: number;
+    count: number; // Front-end derived
     isPinned: boolean;
     parentId: string | null;
     index: number;
@@ -28,6 +29,24 @@ interface OrganizationState {
     folders: Folder[];
     tags: Tag[];
     isPro: boolean;
+    isLoading: boolean;
+
+    // Actions
+    fetchOrganization: () => Promise<void>;
+
+    // Folder Actions
+    addFolder: (name: string, color?: FolderColor, parentId?: string | null) => Promise<{ success: boolean; error?: string }>;
+    updateFolder: (id: string, updates: Partial<Pick<Folder, "name" | "color" | "parentId" | "isPinned" | "index">>) => Promise<void>;
+    setParentId: (id: string, parentId: string | null) => Promise<void>;
+    deleteFolder: (id: string) => Promise<void>;
+    togglePin: (id: string) => Promise<void>;
+
+    // Tag Actions
+    addTag: (name: string) => Promise<{ success: boolean; error?: string }>; // Backend doesn't support this yet?
+    updateTag: (id: string, name: string) => Promise<void>;
+    removeTag: (id: string) => Promise<void>;
+    removeTags: (ids: string[]) => Promise<void>;
+    toggleTagPin: (id: string) => Promise<void>;
 
     // Getters
     getSortedFolders: () => Folder[];
@@ -39,270 +58,214 @@ interface OrganizationState {
     getPinnedTags: () => Tag[];
     getSortedTags: () => Tag[];
 
-    // Folder Actions
-    addFolder: (name: string, color?: FolderColor, parentId?: string | null) => { success: boolean; error?: string };
-    updateFolder: (id: string, updates: Partial<Pick<Folder, "name" | "color" | "parentId">>) => void;
-    deleteFolder: (id: string) => void;
-    togglePin: (id: string) => void;
-    setParentId: (id: string, parentId: string | null) => void;
-    updateFolderCount: (id: string, count: number) => void;
-
-    // Tag Actions
-    addTag: (name: string) => { success: boolean; error?: string };
-    updateTag: (id: string, name: string) => void;
-    removeTag: (id: string) => void;
-    removeTags: (ids: string[]) => void;
-    toggleTagPin: (id: string) => void;
-
-    // Settings
-    setIsPro: (isPro: boolean) => void;
+    // Sync Helper
+    recalcCounts: () => void;
 }
 
-const FREE_FOLDER_LIMIT = 5;
-const FREE_TAG_LIMIT = 5;
-const PINNED_TAG_LIMIT = 5;
-
 const colorOptions: FolderColor[] = ["mint", "lavender", "coral", "sky", "yellow"];
+const getRandomColor = (): FolderColor => colorOptions[Math.floor(Math.random() * colorOptions.length)];
 
-const getRandomColor = (): FolderColor => {
-    return colorOptions[Math.floor(Math.random() * colorOptions.length)];
-};
+// Helper to map backend Folder to Frontend
+const mapFolder = (data: any): Folder => ({
+    id: data.id,
+    name: data.name,
+    type: data.type,
+    color: data.color || "gray",
+    count: 0, // Calculated later
+    isPinned: data.isPinned,
+    parentId: data.parentId,
+    index: data.index
+});
 
-// FIX 1: UUID Helper Sederhana (Aman untuk semua environment)
-const generateId = () => `id_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+const mapTag = (data: any): Tag => ({
+    id: data.id,
+    name: data.name, // #hashtag
+    color: data.color || "mint",
+    isPinned: data.isPinned
+});
 
-export const useOrganization = create<OrganizationState>()(
-    persist(
-        (set, get) => ({
-            folders: [
-                { id: "inbox", name: "Inbox", type: "system", color: "gray", count: 0, isPinned: true, parentId: null, index: 0 },
-                { id: "work", name: "Work", type: "custom", color: "sky", count: 0, isPinned: true, parentId: null, index: 1 },
-                { id: "personal", name: "Personal", type: "custom", color: "lavender", count: 0, isPinned: true, parentId: null, index: 2 },
-            ],
-            tags: [
-                { id: "react", name: "#React", color: "mint", isPinned: true },
-                { id: "design", name: "#Design", color: "coral", isPinned: true },
-            ],
-            isPro: false,
+export const useOrganization = create<OrganizationState>((set, get) => ({
+    folders: [],
+    tags: [],
+    isPro: true, // Defaulting to true for now, or fetch from profile
+    isLoading: false,
 
-            getSortedFolders: () => {
-                const state = get();
-                return [...state.folders].sort((a, b) => {
-                    if (a.isPinned && !b.isPinned) return -1;
-                    if (!a.isPinned && b.isPinned) return 1;
-                    if (a.type === "system" && b.type !== "system") return -1;
-                    if (a.type !== "system" && b.type === "system") return 1;
-                    if (a.index !== b.index) return a.index - b.index;
-                    return a.name.localeCompare(b.name);
-                });
-            },
+    fetchOrganization: async () => {
+        set({ isLoading: true });
+        try {
+            const [foldersRes, tagsRes] = await Promise.all([
+                api.get('/folders'),
+                api.get('/tags')
+            ]);
 
-            getRootFolders: () => {
-                return get().folders.filter((f) => f.parentId === null && f.type === "custom");
-            },
+            const folders = foldersRes.data.data.map(mapFolder);
+            const tags = tagsRes.data.data.map(mapTag);
 
-            getChildFolders: (parentId: string) => {
-                return get().folders.filter((f) => f.parentId === parentId);
-            },
-
-            getPinnedRootFolders: () => {
-                return get().folders.filter((f) => f.isPinned && !f.parentId);
-            },
-
-            getFolderById: (id: string) => {
-                return get().folders.find((f) => f.id === id);
-            },
-
-            getTagById: (id: string) => {
-                return get().tags.find((t) => t.id === id);
-            },
-
-            getPinnedTags: () => {
-                return get().tags.filter((t) => t.isPinned).slice(0, PINNED_TAG_LIMIT);
-            },
-
-            getSortedTags: () => {
-                return [...get().tags].sort((a, b) => {
-                    if (a.isPinned && !b.isPinned) return -1;
-                    if (!a.isPinned && b.isPinned) return 1;
-                    return a.name.localeCompare(b.name);
-                });
-            },
-
-            addFolder: (name: string, color?: FolderColor, parentId?: string | null) => {
-                const state = get();
-                const customFolders = state.folders.filter((f) => f.type === "custom");
-
-                if (!state.isPro && customFolders.length >= FREE_FOLDER_LIMIT) {
-                    return { success: false, error: "LIMIT_REACHED" };
-                }
-
-                if (state.folders.some((f) => f.name.toLowerCase() === name.toLowerCase())) {
-                    return { success: false, error: "NAME_EXISTS" };
-                }
-
-                const newFolder: Folder = {
-                    id: generateId(), // Ganti UUID
-                    name,
-                    type: "custom",
-                    color: color || getRandomColor(),
-                    count: 0,
-                    isPinned: false,
-                    parentId: parentId ?? null,
-                    index: state.folders.length,
-                };
-
-                set({ folders: [...state.folders, newFolder] });
-                return { success: true };
-            },
-
-            updateFolder: (id: string, updates: Partial<Pick<Folder, "name" | "color" | "parentId">>) => {
-                const state = get();
-                const folder = state.folders.find((f) => f.id === id);
-                if (!folder || folder.type === "system") return;
-
-                set({
-                    folders: state.folders.map((f) =>
-                        f.id === id ? { ...f, ...updates } : f
-                    ),
-                });
-            },
-
-            deleteFolder: (id: string) => {
-                const state = get();
-                const folder = state.folders.find((f) => f.id === id);
-                if (!folder || folder.type === "system") return;
-
-                set({
-                    folders: state.folders
-                        .filter((f) => f.id !== id)
-                        .map((f) => (f.parentId === id ? { ...f, parentId: null } : f)),
-                });
-            },
-
-            togglePin: (id: string) => {
-                const state = get();
-                const folder = state.folders.find((f) => f.id === id);
-                if (!folder || folder.type === "system") return;
-
-                set({
-                    folders: state.folders.map((f) =>
-                        f.id === id ? { ...f, isPinned: !f.isPinned } : f
-                    ),
-                });
-            },
-
-            setParentId: (id: string, parentId: string | null) => {
-                const state = get();
-                const folder = state.folders.find((f) => f.id === id);
-                if (!folder || folder.type === "system") return;
-                if (id === parentId) return;
-
-                set({
-                    folders: state.folders.map((f) =>
-                        f.id === id ? { ...f, parentId } : f
-                    ),
-                });
-            },
-
-            updateFolderCount: (id: string, count: number) => {
-                const state = get();
-                set({
-                    folders: state.folders.map((f) =>
-                        f.id === id ? { ...f, count } : f
-                    ),
-                });
-            },
-
-            addTag: (name: string) => {
-                const state = get();
-
-                if (!state.isPro && state.tags.length >= FREE_TAG_LIMIT) {
-                    return { success: false, error: "LIMIT_REACHED" };
-                }
-
-                const tagName = name.startsWith("#") ? name : `#${name}`;
-
-                if (state.tags.some((t) => t.name.toLowerCase() === tagName.toLowerCase())) {
-                    return { success: false, error: "NAME_EXISTS" };
-                }
-
-                const newTag: Tag = {
-                    id: generateId(), // Ganti UUID
-                    name: tagName,
-                    color: getRandomColor(),
-                    isPinned: false,
-                };
-
-                set({ tags: [...state.tags, newTag] });
-                return { success: true };
-            },
-
-            updateTag: (id: string, name: string) => {
-                const state = get();
-                const tagName = name.startsWith("#") ? name : `#${name}`;
-                set({
-                    tags: state.tags.map((t) =>
-                        t.id === id ? { ...t, name: tagName } : t
-                    ),
-                });
-            },
-
-            // FIX 2 & 3: Perbaikan Logika Hapus Tag
-            removeTag: (id: string) => {
-                const state = get();
-                const tag = state.tags.find((t) => t.id === id);
-                if (!tag) return;
-
-                // Gunakan fungsi removeTagsFromBookmarks yang menerima ARRAY
-                useBookmarks.getState().removeTagsFromBookmarks([tag.name]);
-
-                set({
-                    tags: state.tags.filter((t) => t.id !== id),
-                });
-            },
-
-            removeTags: (ids: string[]) => {
-                const state = get();
-                // Cari nama tag berdasarkan ID yang mau dihapus
-                const tagsToDelete = state.tags.filter((t) => ids.includes(t.id));
-                const tagNames = tagsToDelete.map(t => t.name);
-
-                // Hapus dari semua bookmark (kirim array string sekaligus)
-                if (tagNames.length > 0) {
-                    useBookmarks.getState().removeTagsFromBookmarks(tagNames);
-                }
-
-                // Hapus dari store Organization
-                set({
-                    tags: state.tags.filter((t) => !ids.includes(t.id)),
-                });
-            },
-
-            toggleTagPin: (id: string) => {
-                const state = get();
-                const tag = state.tags.find((t) => t.id === id);
-                if (!tag) return;
-
-                const pinnedCount = state.tags.filter((t) => t.isPinned).length;
-
-                if (!state.isPro && !tag.isPinned && pinnedCount >= PINNED_TAG_LIMIT) {
-                    return;
-                }
-
-                set({
-                    tags: state.tags.map((t) =>
-                        t.id === id ? { ...t, isPinned: !t.isPinned } : t
-                    ),
-                });
-            },
-
-            setIsPro: (isPro: boolean) => {
-                set({ isPro });
-            },
-        }),
-        {
-            name: "atbookmark-organization",
+            set({ folders, tags });
+            get().recalcCounts();
+        } catch (error) {
+            console.error("Failed to fetch organization", error);
+            // toast.error("Failed to load organization");
+        } finally {
+            set({ isLoading: false });
         }
-    )
-);
+    },
+
+    addFolder: async (name, color, parentId) => {
+        try {
+            const response = await api.post('/folders', {
+                name,
+                color: color || getRandomColor(),
+                parentId,
+                type: 'custom'
+            });
+            const newFolder = mapFolder(response.data.data);
+            set(state => ({ folders: [...state.folders, newFolder] }));
+            return { success: true };
+        } catch (error: any) {
+            toast.error("Failed to create folder");
+            return { success: false, error: error.message };
+        }
+    },
+
+    updateFolder: async (id, updates) => {
+        // Optimistic
+        set(state => ({
+            folders: state.folders.map(f => f.id === id ? { ...f, ...updates } : f)
+        }));
+
+        try {
+            await api.patch(`/folders/${id}`, updates);
+        } catch (error) {
+            toast.error("Failed to update folder");
+            // Revert? (Complex, skipping for MVP)
+        }
+    },
+
+    setParentId: (id: string, parentId: string | null) => get().updateFolder(id, { parentId }),
+
+    deleteFolder: async (id) => {
+        try {
+            await api.delete(`/folders/${id}`);
+            set(state => ({
+                folders: state.folders.filter(f => f.id !== id)
+            }));
+            toast.success("Folder deleted");
+        } catch (error) {
+            toast.error("Failed to delete folder");
+        }
+    },
+
+    togglePin: async (id) => {
+        const folder = get().getFolderById(id);
+        if (!folder) return;
+        get().updateFolder(id, { isPinned: !folder.isPinned });
+    },
+
+    // TAGS
+
+    addTag: async (name) => {
+        try {
+            const response = await api.post('/tags', {
+                name,
+                color: getRandomColor()
+            });
+
+            // If the tag essentially already existed (backend returned existing), we should check
+            // if we already have it in store to avoid duplicates in UI state array
+            const newTag = mapTag(response.data.data);
+
+            set(state => {
+                const exists = state.tags.find(t => t.id === newTag.id);
+                if (exists) return state;
+                return { tags: [...state.tags, newTag] };
+            });
+
+            return { success: true };
+        } catch (error: any) {
+            toast.error("Failed to create tag");
+            return { success: false, error: error.message };
+        }
+    },
+
+    updateTag: async (id, name) => {
+        // Optimistic
+        set(state => ({
+            tags: state.tags.map(t => t.id === id ? { ...t, name } : t)
+        }));
+        try {
+            await api.patch(`/tags/${id}`, { name });
+        } catch (e) { toast.error("Failed to update tag"); }
+    },
+
+    removeTag: async (id) => {
+        try {
+            await api.delete(`/tags/${id}`);
+            set(state => ({
+                tags: state.tags.filter(t => t.id !== id)
+            }));
+            toast.success("Tag deleted");
+        } catch (e) { toast.error("Failed to delete tag"); }
+    },
+
+    removeTags: async (ids: string[]) => {
+        try {
+            // Sequential delete for now as backend might not support bulk delete yet, 
+            // or use Promise.all. 
+            // Better UX to use Promise.all to be faster. 
+            // If backend has bulk endpoint, use that.
+            // Assuming individual delete is safer for now based on other patterns.
+            await Promise.all(ids.map(id => api.delete(`/tags/${id}`)));
+
+            set(state => ({
+                tags: state.tags.filter(t => !ids.includes(t.id))
+            }));
+        } catch (e) {
+            toast.error("Failed to delete some tags");
+            // Reload to be safe?
+            get().fetchOrganization();
+        }
+    },
+
+    toggleTagPin: async (id) => {
+        const tag = get().getTagById(id);
+        if (!tag) return;
+
+        set(state => ({
+            tags: state.tags.map(t => t.id === id ? { ...t, isPinned: !tag.isPinned } : t)
+        }));
+
+        try {
+            await api.patch(`/tags/${id}`, { isPinned: !tag.isPinned });
+        } catch (e) { }
+    },
+
+    recalcCounts: () => {
+        // Calculate counts based on useBookmarks Store?
+        // Actually this creates a dependency cycle or sync issue if not careful.
+        // Ideally Sidebar component calls getBookmarkCount from useBookmarks directly.
+        // We'll leave count as 0 here and let UI derive it.
+    },
+
+    // Getters (Standard sorting)
+    getSortedFolders: () => {
+        const state = get();
+        return [...state.folders].sort((a, b) => {
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            if (a.type === "system" && b.type !== "system") return -1;
+            if (a.type !== "system" && b.type === "system") return 1;
+            return a.index - b.index || a.name.localeCompare(b.name);
+        });
+    },
+
+    getRootFolders: () => get().folders.filter((f) => !f.parentId && f.type === 'custom'),
+    getChildFolders: (parentId) => get().folders.filter((f) => f.parentId === parentId),
+    getPinnedRootFolders: () => get().folders.filter((f) => f.isPinned && !f.parentId),
+
+    getFolderById: (id) => get().folders.find((f) => f.id === id),
+    getTagById: (id) => get().tags.find((t) => t.id === id),
+
+    getPinnedTags: () => get().tags.filter((t) => t.isPinned),
+    getSortedTags: () => [...get().tags].sort((a, b) => a.name.localeCompare(b.name)),
+}));
