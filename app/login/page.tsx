@@ -11,46 +11,38 @@ import { AuthLayout } from "@/components/auth/AuthLayout";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useAuthContext } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function LoginPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [isLoading, setIsLoading] = useState(false);
+    const { login, isLoading } = useAuth();
+    const { login: contextLogin } = useAuthContext();
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+    // Form State
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
 
     // Get returnUrl from query params, default to /dashboard
     const returnUrl = searchParams.get("returnUrl") || "/dashboard";
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true);
-
-        // Mock loading delay
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-
-        // Set mock session
-        localStorage.setItem("atbookmark_session", "authenticated");
-
-        toast.success("Welcome back! Redirecting... 🌊");
-
-        setTimeout(() => {
+        const result = await login(email, password);
+        if (result && result.success) {
+            contextLogin(result.token, result.user);
+            toast.success("Welcome back! Redirecting... 🌊");
             router.push(returnUrl);
-        }, 500);
+        }
     };
 
-    const handleGoogleLogin = async () => {
+    const handleGoogleLogin = () => {
         setIsGoogleLoading(true);
-
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-
-        // Set mock session
-        localStorage.setItem("atbookmark_session", "authenticated");
-
-        toast.success("Connected with Google! Redirecting... 🌊");
-
-        setTimeout(() => {
-            router.push(returnUrl);
-        }, 500);
+        // Redirect to Backend Google Auth Endpoint
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
+        window.location.href = `${apiUrl}/auth/google`;
     };
 
     return (
@@ -103,6 +95,8 @@ export default function LoginPage() {
                         icon={<Mail className="h-5 w-5" />}
                         required
                         disabled={isLoading || isGoogleLoading}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                     />
 
                     <Input
@@ -111,6 +105,8 @@ export default function LoginPage() {
                         icon={<Lock className="h-5 w-5" />}
                         required
                         disabled={isLoading || isGoogleLoading}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                     />
                 </motion.div>
 

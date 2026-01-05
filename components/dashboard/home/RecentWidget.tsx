@@ -104,14 +104,20 @@ function CompactBookmarkItem({ bookmark, index }: CompactBookmarkItemProps) {
         >
             {/* Cover Image */}
             <div className="h-16 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-secondary">
-                <img
-                    src={bookmark.coverImage}
-                    alt=""
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                    onError={(e) => {
-                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${bookmark.domain}&background=C4B5FD&color=6366F1`;
-                    }}
-                />
+                {bookmark.coverImage ? (
+                    <img
+                        src={bookmark.coverImage}
+                        alt=""
+                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        onError={(e) => {
+                            e.currentTarget.src = `https://ui-avatars.com/api/?name=${bookmark.domain}&background=C4B5FD&color=6366F1`;
+                        }}
+                    />
+                ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-accent-lavender/20 text-accent-lavender font-bold text-xs">
+                        {bookmark.domain.charAt(0).toUpperCase()}
+                    </div>
+                )}
             </div>
 
             {/* Content */}

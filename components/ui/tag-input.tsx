@@ -37,7 +37,7 @@ export function TagInput({
     const [limitError, setLimitError] = useState(false);
     const FREE_TAG_LIMIT = 3;
 
-    const addTagToInput = (tagName: string) => {
+    const addTagToInput = async (tagName: string) => {
         const trimmed = tagName.trim();
         if (!trimmed) return;
 
@@ -63,7 +63,7 @@ export function TagInput({
             setLimitError(false);
         } else {
             // Tag doesn't exist - try to create it (Smart Auto-Create)
-            const result = addTag(trimmed);
+            const result = await addTag(trimmed);
 
             if (result.success) {
                 // Successfully created new tag

@@ -7,9 +7,6 @@ import {
     Home,
     Inbox,
     Library,
-    Sparkles,
-    Brain,
-    TrendingDown,
     Folder,
     Tag,
     Settings,
@@ -18,8 +15,8 @@ import {
     ChevronRight,
     GripVertical,
     LucideArchive,
-    Lock,
     Puzzle,
+    BarChart3,
 } from "lucide-react";
 import { useState, DragEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -35,28 +32,21 @@ interface SidebarProps {
     onClose: () => void;
 }
 
-// UPDATE 1: Menambahkan flag isPro dan isDev pada konfigurasi menu
+// Simplified navigation - all features are free
 const navGroups = [
     {
         label: "My Brain",
         items: [
-            { label: "Home", href: "/dashboard", icon: Home, isPro: false, isDev: false },
-            { label: "All Library", href: "/dashboard/library", icon: Library, isPro: false, isDev: false },
-        ],
-    },
-    {
-        label: "Smart Views",
-        items: [
-            { label: "Archives", href: "/dashboard/archives", icon: LucideArchive, isPro: false, isDev: false },
-            { label: "AI Curated", href: "/dashboard/ai-curated", icon: Sparkles, isPro: true, isDev: true },
-            { label: "Knowledge Graph", href: "/dashboard/knowledge", icon: Brain, isPro: true, isDev: true },
-            { label: "RAM Saver", href: "/dashboard/ram-saver", icon: TrendingDown, isPro: true, isDev: true },
+            { label: "Home", href: "/dashboard", icon: Home },
+            { label: "All Library", href: "/dashboard/library", icon: Library },
+            { label: "Archives", href: "/dashboard/archives", icon: LucideArchive },
         ],
     },
     {
         label: "Tools",
         items: [
-            { label: "Extension", href: "/dashboard/extension", icon: Puzzle, isPro: false, isDev: false },
+            { label: "Usage", href: "/dashboard/settings?tab=usage", icon: BarChart3 },
+            { label: "Extension", href: "/dashboard/extension", icon: Puzzle },
         ],
     },
 ];
@@ -149,7 +139,7 @@ function FolderItem({
                     isDragOver && "bg-primary/20 ring-2 ring-primary",
                     pathname === `/dashboard/folder/${folder.id}`
                         ? "bg-primary/10 font-medium text-primary"
-                        : "hover:bg-gray-100"
+                        : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                 )}
                 style={{ paddingLeft: `${12 + level * 16}px` }}
             >
@@ -229,11 +219,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     // Drag state
     const [draggedFolder, setDraggedFolder] = useState<FolderType | null>(null);
 
-    const inboxFolder = folders.find((f) => f.id === "inbox");
-    const inboxCount = getBookmarkCount("inbox");
+    // Fix: Find inbox by logic (system type + name Inbox) NOT hardcoded ID 'inbox'
+    const inboxFolder = folders.find((f) => f.type === 'system' && f.name === 'Inbox');
+    // If inboxFolder is found, use its ID for counting. Fallback to 'inbox' string if needed but likely wrong.
+    const inboxCount = inboxFolder ? getBookmarkCount(inboxFolder.id) : 0;
+
+    // Ensure Inbox is REMOVED from custom folders list if it accidentally got in there (it shouldn't if type is system)
     const customFolders = folders.filter((f) => f.type === "custom");
 
-    const pinnedRootFolders = getPinnedRootFolders().filter((f) => f.id !== "inbox");
+    const pinnedRootFolders = getPinnedRootFolders().filter((f) =>
+        f.id !== "inbox" && f.type !== 'system' && f.name !== 'Inbox'
+    );
     const visibleFolders = isPro
         ? pinnedRootFolders
         : pinnedRootFolders.slice(0, FREE_FOLDER_LIMIT);
@@ -295,24 +291,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         setDraggedFolder(null);
     };
 
-    // UPDATE 2: Helper function untuk menangani klik menu
-    const handleMenuClick = (e: React.MouseEvent, item: typeof navGroups[0]['items'][0]) => {
-        // 1. Cek apakah fitur Pro dan user masih Free
-        if (item.isPro && !isPro) {
-            e.preventDefault(); // Jangan pindah halaman
-            setProModalOpen(true);
-            return;
-        }
-
-        // 2. Cek apakah fitur masih dalam pengembangan (isDev)
-        if (item.isDev) {
-            e.preventDefault(); // Jangan pindah halaman (cegah 404)
-            toast.info("This feature is currently under development! 🚀");
-            return;
-        }
-
-        // Default: Biarkan Link bekerja normal
-        // Close sidebar on mobile if needed
+    // Simplified: Close sidebar on mobile
+    const handleMenuClick = () => {
         if (window.innerWidth < 1024) {
             onClose();
         }
@@ -355,10 +335,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     {inboxFolder && (
                         <div className="mb-4">
                             <Link
-                                href="/dashboard/folder/inbox"
+                                href="/dashboard/inbox"
                                 className={cn(
                                     "group flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition-all",
-                                    pathname === "/dashboard/folder/inbox"
+                                    pathname === "/dashboard/inbox"
                                         ? "bg-primary/10 text-primary"
                                         : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                                 )}
@@ -374,7 +354,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         </div>
                     )}
 
-                    {/* Nav Groups (Updated with Logic) */}
+                    {/* Nav Groups */}
                     {navGroups.map((group) => (
                         <div key={group.label} className="mb-6">
                             <h3 className="mb-2 px-3 text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
@@ -383,29 +363,22 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                             <ul className="space-y-1">
                                 {group.items.map((item) => {
                                     const Icon = item.icon;
-                                    const isActive = pathname === item.href;
-                                    const isLocked = item.isPro && !isPro;
+                                    const isActive = pathname === item.href || pathname.startsWith(item.href.split('?')[0]);
 
                                     return (
                                         <li key={item.label}>
                                             <Link
                                                 href={item.href}
-                                                onClick={(e) => handleMenuClick(e, item)}
+                                                onClick={handleMenuClick}
                                                 className={cn(
-                                                    "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all group",
+                                                    "flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all",
                                                     isActive
                                                         ? "bg-primary/10 font-medium text-primary"
-                                                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-gray-200",
-                                                    isLocked && "opacity-75 hover:opacity-100"
+                                                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-gray-200"
                                                 )}
                                             >
                                                 <Icon className="h-4 w-4" />
                                                 <span className="flex-1">{item.label}</span>
-
-                                                {/* Show Lock icon if Pro and User is Free */}
-                                                {isLocked && (
-                                                    <Lock className="h-3 w-3 text-gray-400 group-hover:text-amber-500 transition-colors" />
-                                                )}
                                             </Link>
                                         </li>
                                     );
@@ -429,7 +402,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                             </Link>
                             <button
                                 onClick={handleAddFolder}
-                                className="rounded-md p-1 hover:bg-gray-100 transition-colors"
+                                className="rounded-md p-1 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                                 title="Add Folder"
                             >
                                 <Plus className="h-4 w-4" />
@@ -480,7 +453,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                             {isPro && (
                                 <button
                                     onClick={handleAddTag}
-                                    className="rounded-md p-1 hover:bg-gray-100 transition-colors"
+                                    className="rounded-md p-1 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                                     title="Add Tag"
                                 >
                                     <Plus className="h-4 w-4" />
@@ -499,7 +472,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                                     "flex items-center gap-2 rounded-lg pl-6 pr-3 py-1.5 text-sm transition-all",
                                                     pathname === `/dashboard/tag/${tag.id}`
                                                         ? "bg-primary/10 font-medium text-primary"
-                                                        : "hover:bg-gray-100"
+                                                        : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                                                 )}
                                             >
                                                 <span
@@ -534,20 +507,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
                 {/* Footer */}
                 <div className="border-t-2 border-border p-4">
-                    {/* Pro Badge / Upgrade */}
-                    {isPro ? (
-                        <div className="mb-3 flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-100 to-yellow-100 px-3 py-2">
-                            <span className="text-sm">✨</span>
-                            <span className="text-sm font-bold text-amber-700">Pro Active</span>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => setProModalOpen(true)}
-                            className="mb-3 w-full rounded-lg bg-primary/10 px-3 py-2 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
-                        >
-                            ✨ Upgrade to Pro
-                        </button>
-                    )}
+                    {/* Support Developer Button */}
+                    <button
+                        onClick={() => setProModalOpen(true)}
+                        className="mb-3 w-full rounded-lg bg-accent-mint/20 px-3 py-2 text-sm font-medium text-black-700 hover:bg-accent-mint/30 transition-colors flex items-center justify-center gap-2"
+                    >
+                        ☕ Trakteer Coffee
+                    </button>
 
                     <ul className="space-y-1">
                         {/* UPDATE 3: Menu Trash dihapus sesuai permintaan */}
@@ -561,17 +527,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                             </Link>
                         </li>
                     </ul>
-
-                    {/* Dev Toggle */}
-                    <button
-                        onClick={() => {
-                            useOrganization.getState().setIsPro(!isPro);
-                            toast.success(isPro ? "Switched to Free Plan" : "Switched to Pro Plan ✨");
-                        }}
-                        className="mt-4 w-full text-center text-xs text-gray-300 hover:text-gray-500 transition-colors"
-                    >
-                        [Dev: Toggle Pro]
-                    </button>
                 </div>
             </aside>
 

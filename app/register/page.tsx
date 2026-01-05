@@ -10,42 +10,47 @@ import { AuthLayout } from "@/components/auth/AuthLayout";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useAuthContext } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function RegisterPage() {
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
+    const { register, isLoading } = useAuth();
+    const { login: contextLogin } = useAuthContext();
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+    // Form State
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true);
 
-        // Mock loading delay
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        if (password !== confirmPassword) {
+            toast.error("Passwords do not match");
+            return;
+        }
 
-        // Set mock session
-        localStorage.setItem("atbookmark_session", "authenticated");
+        if (password.length < 6) {
+            toast.error("Password must be at least 6 characters");
+            return;
+        }
 
-        toast.success("Account created! Redirecting... ✨");
-
-        setTimeout(() => {
+        const result = await register(email, password);
+        if (result && result.success) {
+            contextLogin(result.token, result.user);
+            toast.success("Account created! Redirecting... ✨");
             router.push("/dashboard");
-        }, 500);
+        }
     };
 
-    const handleGoogleLogin = async () => {
+    const handleGoogleLogin = () => {
         setIsGoogleLoading(true);
-
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-
-        // Set mock session
-        localStorage.setItem("atbookmark_session", "authenticated");
-
-        toast.success("Connected with Google! Redirecting... ✨");
-
-        setTimeout(() => {
-            router.push("/dashboard");
-        }, 500);
+        // Redirect to Backend Google Auth Endpoint
+        // In Prod, use env var: process.env.NEXT_PUBLIC_API_URL + '/auth/google'
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3333";
+        window.location.href = `${apiUrl}/auth/google`;
     };
 
     return (
@@ -98,6 +103,8 @@ export default function RegisterPage() {
                         icon={<Mail className="h-5 w-5" />}
                         required
                         disabled={isLoading || isGoogleLoading}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                     />
 
                     <Input
@@ -106,6 +113,8 @@ export default function RegisterPage() {
                         icon={<Lock className="h-5 w-5" />}
                         required
                         disabled={isLoading || isGoogleLoading}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                     />
 
                     <Input
@@ -114,6 +123,8 @@ export default function RegisterPage() {
                         icon={<Lock className="h-5 w-5" />}
                         required
                         disabled={isLoading || isGoogleLoading}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
                     />
                 </motion.div>
 

@@ -62,10 +62,10 @@ export function BookmarkCard({
         updateBookmark,
         restoreBookmarks,
         archiveBookmarks,
-        getArchivedCount,
+        recordAccess,
     } = useBookmarks();
 
-    const { folders, isPro } = useOrganization();
+    const { folders } = useOrganization();
 
     const [proModalOpen, setProModalOpen] = useState(false);
 
@@ -93,25 +93,17 @@ export function BookmarkCard({
     /* ----------------------------------
      * Actions
      * ---------------------------------- */
-    const handleOpenLink = () => window.open(bookmark.url, "_blank");
+    const handleOpenLink = () => {
+        recordAccess(bookmark.id); // Track access for auto-archive
+        window.open(bookmark.url, "_blank");
+    };
 
     const handleMoveToFolder = (targetFolderId: string, targetFolderName: string) => {
         moveBookmarks([bookmark.id], targetFolderId);
         toast.success(`Moved to ${targetFolderName}`);
     };
 
-    const FREE_ARCHIVE_LIMIT = 5;
-
     const handleArchive = () => {
-        // Check archive limit for Free users
-        if (!isPro && getArchivedCount() >= FREE_ARCHIVE_LIMIT) {
-            toast.error("Free plan limit: 5 archived items max. Upgrade to Pro for unlimited!", {
-                icon: "🔒",
-                duration: 4000,
-            });
-            setProModalOpen(true);
-            return;
-        }
         archiveBookmarks([bookmark.id]);
         toast.success("Moved to Archive");
     };
@@ -222,7 +214,7 @@ export function BookmarkCard({
 
                     <img
                         src={
-                            imageError
+                            imageError || !bookmark.coverImage
                                 ? `https://ui-avatars.com/api/?name=${bookmark.domain}&background=random&color=fff`
                                 : bookmark.coverImage
                         }
